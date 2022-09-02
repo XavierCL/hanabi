@@ -1,26 +1,29 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import GameBoard from "./gameBoard/GameBoard";
+import MenuButtons from "./menu/MenuButtons";
 
-function App() {
+const App = () => {
+  const [gameBoardInitialState, setGameBoardInitialState] = useState({
+    key: 0,
+    numberOfAi: 2,
+  });
+
+  const restartGame = (numberOfAi: number) => {
+    setGameBoardInitialState(({ key: oldKey }) => ({
+      key: oldKey + 1,
+      numberOfAi,
+    }));
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <GameBoard
+        key={gameBoardInitialState.key}
+        numberOfAi={gameBoardInitialState.numberOfAi}
+      />
+      <MenuButtons onStartGame={restartGame} />
     </div>
   );
-}
+};
 
 export default App;
