@@ -1,11 +1,11 @@
 import _ from "lodash";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DiscardedCards from "./DiscardedCards";
 import ImmutableGameState, {
   Move,
   MoveQuery,
 } from "./domain/ImmutableGameState";
-import gameAi from "./gameAi/dummyAi";
+import GameAi from "./gameAi/iPlayMine";
 import HandOfCard from "./HandOfCard";
 import MoveList from "./MoveList";
 import PlayedCards from "./PlayedCards";
@@ -16,6 +16,12 @@ const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
   const [gameHistory, setGameHistory] = useState([
     ImmutableGameState.from(numberOfAi + 1),
   ]);
+
+  const gameAis = useMemo(
+    () => _.range(numberOfAi).map((_) => new GameAi()),
+    [numberOfAi]
+  );
+
   const lastAiThink = useRef(0);
 
   // Reset game history when number of ai changes
@@ -44,10 +50,24 @@ const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
 
     setTimeout(() => {
       const startTime = performance.now();
-      const moveQuery = gameAi(gameHistory);
+      let moveQuery: MoveQuery | undefined = undefined;
+      gameAis.forEach((gameAi, aiIndex) => {
+        const historyView = gameHistory.map((gameState) =>
+          gameState.asView(currentGame.currentTurnPlayerIndex)
+        );
+
+        if (aiIndex + 1 === currentGame.currentTurnPlayerIndex) {
+          moveQuery = gameAi.playOwnTurn(historyView);
+        } else {
+          gameAi.observeOthersTurn(historyView);
+        }
+      });
+
       const endTime = performance.now();
 
       setTimeout(() => {
+        if (!moveQuery) throw new Error("AI didn't play");
+
         onInteraction(moveQuery);
       }, _.max([1000 - (endTime - startTime), 0]));
     }, 0);

@@ -30,17 +30,25 @@ export default class ImmutableCard {
   }
 
   asOwn(): ImmutableCardView<CardColor | undefined, CardNumber | undefined> {
-    return new ImmutableCardView(this.id, {
-      color: this.clues.color ? this.color : undefined,
-      number: this.clues.number ? this.number : undefined,
-    });
+    return new ImmutableCardView(
+      this.id,
+      {
+        color: this.clues.color ? this.color : undefined,
+        number: this.clues.number ? this.number : undefined,
+      },
+      this.clues
+    );
   }
 
   asOthers(): ImmutableCardView<CardColor, CardNumber> {
-    return new ImmutableCardView(this.id, {
-      color: this.color,
-      number: this.number,
-    });
+    return new ImmutableCardView(
+      this.id,
+      {
+        color: this.color,
+        number: this.number,
+      },
+      this.clues
+    );
   }
 
   receiveClue(

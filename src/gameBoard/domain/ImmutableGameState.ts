@@ -1,9 +1,10 @@
 import ImmutableCard, { CardColor, CardNumber } from "./ImmutableCard";
 import ImmutableHand from "./ImmutableHand";
 import _ from "lodash";
+import ImmutableGameView from "./ImmutableGameView";
 
 type RemainingLives = 3 | 2 | 1 | 0;
-type RemainingClues = 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0;
+export type RemainingClues = 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0;
 
 export type MoveQuery = {
   targetPlayerIndex: number;
@@ -252,40 +253,14 @@ export default class ImmutableGameState {
     );
   }
 
-  getLegalMoves(): readonly MoveQuery[] {
-    const canDiscard = this.canDiscard();
-    const canGiveClue = this.canGiveClue();
-
-    return this.hands.flatMap((hand, playerIndex) => {
-      if (playerIndex === this.currentTurnPlayerIndex) {
-        return hand
-          .asOwn()
-          .flatMap((card) => {
-            const interactions: MoveQuery["interaction"][] = [
-              { play: card.cardId },
-            ];
-
-            if (canDiscard) {
-              interactions.push({ discard: card.cardId });
-            }
-
-            return interactions;
-          })
-          .map((interaction) => ({
-            targetPlayerIndex: playerIndex,
-            interaction,
-          }));
-      }
-
-      if (!canGiveClue) return [];
-
-      const allColors = _.uniq(hand.asOthers().map((card) => card.color));
-      const allNumbers = _.uniq(hand.asOthers().map((card) => card.number));
-
-      return [
-        ...allColors.map((color) => ({ color })),
-        ...allNumbers.map((number) => ({ number })),
-      ].map((interaction) => ({ targetPlayerIndex: playerIndex, interaction }));
-    });
+  asView(playerIndex: number): ImmutableGameView {
+    return new ImmutableGameView(
+      this.remainingClues,
+      this.hands.map((hand, handIndex) =>
+        handIndex === playerIndex ? hand.asOwn() : hand.asOthers()
+      ),
+      this.currentTurnPlayerIndex,
+      this.playedCards
+    );
   }
 }

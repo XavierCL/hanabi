@@ -1,6 +1,10 @@
-import ImmutableGameState, { MoveQuery } from "../domain/ImmutableGameState";
+import { MoveQuery } from "../domain/ImmutableGameState";
+import ImmutableGameView from "../domain/ImmutableGameView";
 
-const gameAi = (gameHistory: readonly ImmutableGameState[]): MoveQuery =>
-  gameHistory[gameHistory.length - 1].getLegalMoves()[0];
+export default class GameAi {
+  observeOthersTurn(gameHistory: readonly ImmutableGameView[]): void {}
 
-export default gameAi;
+  playOwnTurn(gameHistory: readonly ImmutableGameView[]): MoveQuery {
+    return gameHistory[gameHistory.length - 1].getLegalMoves()[0];
+  }
+}

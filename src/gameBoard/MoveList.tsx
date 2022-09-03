@@ -11,91 +11,98 @@ const MoveList = ({
   moves: readonly Move[];
   startingPlayerIndex: number;
   playerNames: readonly string[];
-}) => (
-  <ol
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: "5px",
-      width: "250px",
-    }}
-  >
-    {moves.map((move, moveIndex) => {
-      const playerName =
-        playerNames[(moveIndex + startingPlayerIndex) % playerNames.length];
+}) => {
+  return (
+    <ol
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "5px",
+        width: "250px",
+        height: "90vh",
+        overflowY: "auto",
+      }}
+    >
+      {moves.map((move, moveIndex) => {
+        const playerName =
+          playerNames[(moveIndex + startingPlayerIndex) % playerNames.length];
 
-      const template = (() => {
-        if ("play" in move.interaction) {
-          return (
-            <span
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                gap: "5px",
-              }}
-            >
-              {playerName} played{" "}
-              <Card
-                canInteract={false}
-                card={move.interaction.play.asOthers()}
-                onInteraction={() => {}}
-                ownCardStatus="none"
-                shrink={0.1}
-              />
-            </span>
-          );
-        }
+        const template = (() => {
+          if ("play" in move.interaction) {
+            return (
+              <span
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: "5px",
+                }}
+              >
+                {playerName} played{" "}
+                <Card
+                  canInteract={false}
+                  card={move.interaction.play.asOthers()}
+                  onInteraction={() => {}}
+                  ownCardStatus="none"
+                  shrink={0.1}
+                />
+              </span>
+            );
+          }
 
-        if ("discard" in move.interaction) {
-          return (
-            <span style={{ display: "flex", flexDirection: "row", gap: "5px" }}>
-              {playerName} discarded{" "}
-              <Card
-                canInteract={false}
-                card={move.interaction.discard.asOthers()}
-                onInteraction={() => {}}
-                ownCardStatus="none"
-                shrink={0.1}
-              />
-            </span>
-          );
-        }
+          if ("discard" in move.interaction) {
+            return (
+              <span
+                style={{ display: "flex", flexDirection: "row", gap: "5px" }}
+              >
+                {playerName} discarded{" "}
+                <Card
+                  canInteract={false}
+                  card={move.interaction.discard.asOthers()}
+                  onInteraction={() => {}}
+                  ownCardStatus="none"
+                  shrink={0.1}
+                />
+              </span>
+            );
+          }
 
-        if ("color" in move.interaction) {
+          if ("color" in move.interaction) {
+            return (
+              <span>
+                {playerName} clued {playerNames[move.targetPlayerIndex]} about
+                their{" "}
+                <Card
+                  colorStyle={{ marginTop: "7px" }}
+                  canInteract={false}
+                  card={
+                    new ImmutableCardView<CardColor, undefined>("", {
+                      color: move.interaction.color,
+                      number: undefined,
+                    })
+                  }
+                  onInteraction={() => {}}
+                  ownCardStatus="none"
+                  shrink={0.1}
+                />
+              </span>
+            );
+          }
+
           return (
             <span>
               {playerName} clued {playerNames[move.targetPlayerIndex]} about
               their{" "}
-              <Card
-                colorStyle={{ marginTop: "7px" }}
-                canInteract={false}
-                card={
-                  new ImmutableCardView<CardColor, undefined>("", {
-                    color: move.interaction.color,
-                    number: undefined,
-                  })
-                }
-                onInteraction={() => {}}
-                ownCardStatus="none"
-                shrink={0.1}
-              />
+              <span style={{ fontWeight: "bold" }}>
+                {move.interaction.number}
+              </span>
             </span>
           );
-        }
+        })();
 
-        return (
-          <span>
-            {playerName} clued {playerNames[move.targetPlayerIndex]} about their{" "}
-            <span style={{ fontWeight: "bold" }}>
-              {move.interaction.number}
-            </span>
-          </span>
-        );
-      })();
-
-      return <li key={moveIndex}>{template}</li>;
-    })}
-  </ol>
-);
+        return <li key={moveIndex}>{template}</li>;
+      })}
+    </ol>
+  );
+};
 
 export default MoveList;

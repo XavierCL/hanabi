@@ -127,7 +127,7 @@ const Card = ({
           style={{
             color: frontColor,
             textShadow: "black 0px 0px 1px",
-            fontSize: 40,
+            fontSize: 40 * (shrink ?? 0.2) * 5,
           }}
         >
           {card.number}
