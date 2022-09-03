@@ -10,7 +10,7 @@ const MenuButtons = ({
   const getValidNumberOfAi = (): number | undefined => {
     const numberOfAi = Number.parseInt(numberOfAiString);
 
-    if (Number.isNaN(numberOfAi) || numberOfAi < 1 || numberOfAi > 4) {
+    if (Number.isNaN(numberOfAi) || numberOfAi < 1 || numberOfAi > 6) {
       return undefined;
     }
 

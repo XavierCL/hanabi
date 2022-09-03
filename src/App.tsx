@@ -16,7 +16,7 @@ const App = () => {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
       <GameBoard
         key={gameBoardInitialState.key}
         numberOfAi={gameBoardInitialState.numberOfAi}
