@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { useEffect, useMemo, useRef } from "react";
 import ImmutableGameState, { MoveQuery } from "../domain/ImmutableGameState";
-import GameAi from "../gameAi/iPlayMine";
+import GameAi from "../gameAi/iPlayMineCluePlayable";
 
 const HUMAN_PLAYER_INDEX = 0;
 

@@ -13,14 +13,14 @@ import useGameAi from "./useGameAi";
 const HUMAN_PLAYER_INDEX = 0;
 
 const GameBoard = ({
-  numberOfAi,
+  numberOfPlayer,
   hasHuman,
 }: {
-  numberOfAi: number;
+  numberOfPlayer: number;
   hasHuman: boolean;
 }) => {
   const [gameHistory, setGameHistory] = useState([
-    ImmutableGameState.from(numberOfAi + Number(hasHuman)),
+    ImmutableGameState.from(numberOfPlayer),
   ]);
 
   const currentGame = gameHistory[gameHistory.length - 1];
@@ -34,8 +34,8 @@ const GameBoard = ({
       return;
     }
 
-    setGameHistory([ImmutableGameState.from(numberOfAi + Number(hasHuman))]);
-  }, [hasHuman, numberOfAi]);
+    setGameHistory([ImmutableGameState.from(numberOfPlayer)]);
+  }, [hasHuman, numberOfPlayer]);
 
   const onInteraction = (move: MoveQuery) => {
     setGameHistory([...gameHistory, currentGame.playInteraction(move)]);
@@ -43,7 +43,9 @@ const GameBoard = ({
 
   const playerNames = [
     ...(hasHuman ? ["Human"] : []),
-    ..._.range(numberOfAi).map((aiIndex) => `AI ${aiIndex}`),
+    ..._.range(numberOfPlayer - Number(hasHuman)).map(
+      (aiIndex) => `AI ${aiIndex}`
+    ),
   ];
 
   const isHumanTurn =

@@ -1,34 +1,44 @@
 import { useState } from "react";
 
 const MenuButtons = ({
+  numberOfPlayer: initialNumberOfPlayer,
+  hasHuman: initialHasHuman,
   onStartGame,
 }: {
-  onStartGame: (numberOfAi: number, hasHuman: boolean) => void;
+  onStartGame: (numberOfPlayer: number, hasHuman: boolean) => void;
+  numberOfPlayer: number;
+  hasHuman: boolean;
 }) => {
-  const [numberOfAiString, setNumberOfAiString] = useState("2");
-  const [hasHuman, setHasHuman] = useState(true);
+  const [numberOfPlayerString, setNumberOfPlayerString] = useState(
+    String(initialNumberOfPlayer)
+  );
+  const [hasHuman, setHasHuman] = useState(initialHasHuman);
 
-  const getValidNumberOfAi = (): number | undefined => {
-    const numberOfAi = Number.parseInt(numberOfAiString);
+  const getValidNumberOfPlayer = (): number | undefined => {
+    const numberOfPlayer = Number.parseInt(numberOfPlayerString);
 
-    if (Number.isNaN(numberOfAi) || numberOfAi < 1 || numberOfAi > 6) {
+    if (
+      Number.isNaN(numberOfPlayer) ||
+      numberOfPlayer < 2 ||
+      numberOfPlayer > 6
+    ) {
       return undefined;
     }
 
-    return numberOfAi;
+    return numberOfPlayer;
   };
 
-  const validNumberOfAi = getValidNumberOfAi();
+  const validNumberOfPlayer = getValidNumberOfPlayer();
 
   return (
     <div style={{ display: "flex", flexDirection: "row" }}>
       <div>
-        <span>Number of AI</span>
+        <span>Number of Player</span>
         <input
-          value={numberOfAiString}
+          value={numberOfPlayerString}
           onChange={(event) => {
             const newValue: string = event.target.value;
-            setNumberOfAiString(newValue);
+            setNumberOfPlayerString(newValue);
           }}
         />
       </div>
@@ -44,11 +54,11 @@ const MenuButtons = ({
       </div>
       <button
         onClick={() => {
-          if (validNumberOfAi === undefined) return;
+          if (validNumberOfPlayer === undefined) return;
 
-          onStartGame(validNumberOfAi, hasHuman);
+          onStartGame(validNumberOfPlayer, hasHuman);
         }}
-        disabled={validNumberOfAi === undefined}
+        disabled={validNumberOfPlayer === undefined}
       >
         Start game
       </button>
