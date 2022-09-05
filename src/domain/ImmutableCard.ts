@@ -8,14 +8,24 @@ export const CARD_COLORS = [
   "green",
   "purple",
 ] as const;
+const CARD_NUMBERS = [1, 2, 3, 4, 5];
+const CARD_COLOR_SET = new Set(CARD_COLORS);
 export type CardColor = "red" | "yellow" | "blue" | "green" | "purple";
 export type CardNumber = 1 | 2 | 3 | 4 | 5;
+
+export const isCardColor = (color: any): color is CardColor =>
+  CARD_COLOR_SET.has(color);
+
+export const isCardNumber = (cardNumber: any): cardNumber is CardNumber =>
+  typeof cardNumber === "number" && cardNumber > 0 && cardNumber < 6;
 
 export default class ImmutableCard {
   private readonly id: string;
   private readonly color: CardColor;
   private readonly number: CardNumber;
-  private readonly clues: { color: boolean; number: boolean };
+  private readonly clues: Partial<
+    Readonly<Record<CardNumber | CardColor, boolean>>
+  >;
 
   static from(color: CardColor, number: CardNumber): ImmutableCard {
     return new ImmutableCard(_.uniqueId(), color, number, {});
@@ -25,23 +35,20 @@ export default class ImmutableCard {
     id: string,
     color: CardColor,
     number: CardNumber,
-    clues?: { color?: boolean; number?: boolean }
+    clues?: Partial<Readonly<Record<CardNumber | CardColor, boolean>>>
   ) {
     this.id = id;
     this.color = color;
     this.number = number;
-    this.clues = {
-      color: clues?.color ?? false,
-      number: clues?.number ?? false,
-    };
+    this.clues = clues ?? {};
   }
 
   asOwn(): ImmutableCardView<CardColor | undefined, CardNumber | undefined> {
     return new ImmutableCardView(
       this.id,
       {
-        color: this.clues.color ? this.color : undefined,
-        number: this.clues.number ? this.number : undefined,
+        color: this.color in this.clues ? this.color : undefined,
+        number: this.number in this.clues ? this.number : undefined,
       },
       this.clues
     );
@@ -58,13 +65,36 @@ export default class ImmutableCard {
     );
   }
 
+  // Players know the full deck, but not which card id has which color or number, since they know the card id of even face down cards
+  asFullDeck(): ImmutableCardView<CardColor, CardNumber> {
+    return new ImmutableCardView(
+      "",
+      { color: this.color, number: this.number },
+      {}
+    );
+  }
+
   receiveClue(
     clue: { color: CardColor } | { number: CardNumber }
   ): ImmutableCard {
     return new ImmutableCard(this.id, this.color, this.number, {
-      color: this.clues.color || ("color" in clue && clue.color === this.color),
-      number:
-        this.clues.number || ("number" in clue && clue.number === this.number),
+      ...this.clues,
+      ...("color" in clue &&
+        (clue.color === this.color
+          ? Object.fromEntries(
+              CARD_COLORS.map((color) =>
+                this.color === color ? [color, true] : [color, false]
+              )
+            )
+          : { [clue.color]: false })),
+      ...("number" in clue &&
+        (clue.number === this.number
+          ? Object.fromEntries(
+              CARD_NUMBERS.map((number) =>
+                this.number === number ? [number, true] : [number, false]
+              )
+            )
+          : { [clue.number]: false })),
     });
   }
 }

@@ -11,6 +11,8 @@ export default class ImmutableGameView {
   >[])[];
   readonly currentTurnPlayerIndex: number;
   readonly playedCards: Readonly<Record<CardColor, CardNumber | 0>>;
+  readonly fullDeck: readonly ImmutableCardView<CardColor, CardNumber>[];
+  readonly discarded: readonly ImmutableCardView<CardColor, CardNumber>[];
 
   constructor(
     remainingClues: RemainingClues,
@@ -19,12 +21,16 @@ export default class ImmutableGameView {
       CardNumber | undefined
     >[])[],
     currentTurnPlayerIndex: number,
-    playedCards: Readonly<Record<CardColor, CardNumber | 0>>
+    playedCards: Readonly<Record<CardColor, CardNumber | 0>>,
+    fullDeck: readonly ImmutableCardView<CardColor, CardNumber>[],
+    discarded: readonly ImmutableCardView<CardColor, CardNumber>[]
   ) {
     this.remainingClues = remainingClues;
     this.hands = hands;
     this.currentTurnPlayerIndex = currentTurnPlayerIndex;
     this.playedCards = playedCards;
+    this.fullDeck = fullDeck;
+    this.discarded = discarded;
   }
 
   canDiscard(): boolean {

@@ -4,8 +4,10 @@ import ImmutableCard, {
   CARD_COLORS,
 } from "./ImmutableCard";
 import ImmutableHand from "./ImmutableHand";
-import _ from "lodash";
+import _, { isEqual } from "lodash";
 import ImmutableGameView from "./ImmutableGameView";
+import ImmutableCardView from "./ImmutableCardView";
+import GameAi from "../gameAi/playMineCardElemination";
 
 export const MAXIMUM_LIVES = 3;
 type RemainingLives = 3 | 2 | 1 | 0;
@@ -42,6 +44,10 @@ export default class ImmutableGameState {
 
   private readonly remainingDeck: readonly ImmutableCard[];
   private readonly fullDeck: readonly ImmutableCard[];
+  private readonly fullDeckView: readonly ImmutableCardView<
+    CardColor,
+    CardNumber
+  >[];
 
   static from(numberOfPlayers: number): ImmutableGameState {
     const allNumbersAndQuantities = [
@@ -104,7 +110,8 @@ export default class ImmutableGameState {
       3,
       8,
       undefined,
-      undefined
+      undefined,
+      fullDeck.map((card) => card.asFullDeck())
     );
   }
 
@@ -119,7 +126,8 @@ export default class ImmutableGameState {
     remainingLives: RemainingLives,
     remainingClues: RemainingClues,
     leadingMove: Move | undefined,
-    endTurn: number | undefined
+    endTurn: number | undefined,
+    fullDeckView: readonly ImmutableCardView<CardColor, CardNumber>[]
   ) {
     this.turnCount = turnCount;
     this.hands = hands;
@@ -132,6 +140,7 @@ export default class ImmutableGameState {
     this.remainingClues = remainingClues;
     this.leadingMove = leadingMove;
     this.endTurn = endTurn;
+    this.fullDeckView = fullDeckView;
   }
 
   getRemainingDeckLength() {
@@ -151,7 +160,9 @@ export default class ImmutableGameState {
   }
 
   getScore(): number {
-    return _.sum(Object.values(this.playedCards));
+    return this.remainingLives === 0
+      ? 0
+      : _.sum(Object.values(this.playedCards));
   }
 
   getMaxScore(): number {
@@ -192,6 +203,14 @@ export default class ImmutableGameState {
   }
 
   playInteraction(moveQuery: MoveQuery): ImmutableGameState {
+    if (
+      this.asView(this.currentTurnPlayerIndex)
+        .getLegalMoves()
+        .every((legalMove) => !isEqual(legalMove, moveQuery))
+    ) {
+      throw new Error("Played non legal move");
+    }
+
     const { targetPlayerIndex, interaction } = moveQuery;
 
     const newDeck = this.remainingDeck.slice();
@@ -236,6 +255,11 @@ export default class ImmutableGameState {
       // Play failure
       --remainingLives;
       discarded.push(playedCard);
+
+      // debug
+      const move2 = new GameAi().playOwnTurn([
+        this.asView(this.currentTurnPlayerIndex),
+      ]);
 
       return newHand;
     };
@@ -315,7 +339,8 @@ export default class ImmutableGameState {
       this.endTurn ??
         (newDeck.length === 0
           ? this.turnCount + this.hands.length + 1
-          : undefined)
+          : undefined),
+      this.fullDeckView
     );
   }
 
@@ -326,7 +351,9 @@ export default class ImmutableGameState {
         handIndex === playerIndex ? hand.asOwn() : hand.asOthers()
       ),
       this.currentTurnPlayerIndex,
-      this.playedCards
+      this.playedCards,
+      this.fullDeckView,
+      this.discarded.map((card) => card.asOthers())
     );
   }
 }
