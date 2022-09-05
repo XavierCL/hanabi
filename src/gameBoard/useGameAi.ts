@@ -27,8 +27,9 @@ const useGameAi = (
       isHumanTurn ||
       lastAiThink.current >= gameHistory.length ||
       currentGame.isGameOver()
-    )
+    ) {
       return;
+    }
 
     lastAiThink.current = gameHistory.length;
 

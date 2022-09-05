@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ImmutableGameState, {
   Move,
   MoveQuery,
@@ -17,12 +17,19 @@ const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
     ImmutableGameState.from(numberOfAi + 1),
   ]);
 
+  const currentGame = gameHistory[gameHistory.length - 1];
+
+  const firstEffect = useRef(true);
+
   // Reset game history when number of ai changes
   useEffect(() => {
+    if (firstEffect.current) {
+      firstEffect.current = false;
+      return;
+    }
+
     setGameHistory([ImmutableGameState.from(numberOfAi + 1)]);
   }, [numberOfAi]);
-
-  const currentGame = gameHistory[gameHistory.length - 1];
 
   const onInteraction = (move: MoveQuery) => {
     setGameHistory([...gameHistory, currentGame.playInteraction(move)]);

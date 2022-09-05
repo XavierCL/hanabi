@@ -151,6 +151,7 @@ const Card = ({
           display: "flex",
           flexDirection: "row",
           justifyContent: "center",
+          alignItems: "center",
           width: "100%",
           bottom: "10%",
           gap: "5px",
