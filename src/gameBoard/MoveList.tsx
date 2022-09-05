@@ -1,7 +1,8 @@
 import Card from "./Card";
-import { CardColor } from "./domain/ImmutableCard";
-import ImmutableCardView from "./domain/ImmutableCardView";
-import { Move } from "./domain/ImmutableGameState";
+import { CardColor } from "../domain/ImmutableCard";
+import ImmutableCardView from "../domain/ImmutableCardView";
+import { Move } from "../domain/ImmutableGameState";
+import { useEffect, useRef } from "react";
 
 const MoveList = ({
   moves,
@@ -12,6 +13,12 @@ const MoveList = ({
   startingPlayerIndex: number;
   playerNames: readonly string[];
 }) => {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  });
+
   return (
     <ol
       style={{
@@ -101,6 +108,7 @@ const MoveList = ({
 
         return <li key={moveIndex}>{template}</li>;
       })}
+      <div ref={bottomRef} />
     </ol>
   );
 };

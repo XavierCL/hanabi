@@ -1,8 +1,13 @@
-import ImmutableCard, { CardColor, CardNumber } from "./ImmutableCard";
+import ImmutableCard, {
+  CardColor,
+  CardNumber,
+  CARD_COLORS,
+} from "./ImmutableCard";
 import ImmutableHand from "./ImmutableHand";
 import _ from "lodash";
 import ImmutableGameView from "./ImmutableGameView";
 
+export const MAXIMUM_LIVES = 3;
 type RemainingLives = 3 | 2 | 1 | 0;
 export type RemainingClues = 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0;
 
@@ -32,12 +37,12 @@ export default class ImmutableGameState {
   readonly remainingLives: RemainingLives;
   readonly remainingClues: RemainingClues;
   readonly leadingMove: Move | undefined;
+  readonly lastCardPlayerIndex: number | undefined;
 
   private readonly remainingDeck: readonly ImmutableCard[];
   private readonly fullDeck: readonly ImmutableCard[];
 
   static from(numberOfPlayers: number): ImmutableGameState {
-    const allColors = ["red", "blue", "purple", "green", "yellow"] as const;
     const allNumbersAndQuantities = [
       { number: 1, quantity: 3 },
       { number: 2, quantity: 2 },
@@ -47,7 +52,7 @@ export default class ImmutableGameState {
     ] as const;
 
     const fullDeck = _.shuffle(
-      allColors.flatMap((color) =>
+      CARD_COLORS.flatMap((color) =>
         allNumbersAndQuantities.flatMap(({ number, quantity }) =>
           Array.from({ length: quantity }, (_) =>
             ImmutableCard.from(color, number)
@@ -96,6 +101,7 @@ export default class ImmutableGameState {
       [],
       3,
       8,
+      undefined,
       undefined
     );
   }
@@ -109,7 +115,8 @@ export default class ImmutableGameState {
     discarded: readonly ImmutableCard[],
     remainingLives: RemainingLives,
     remainingClues: RemainingClues,
-    leadingMove: Move | undefined
+    leadingMove: Move | undefined,
+    lastCardPlayerIndex: number | undefined
   ) {
     this.hands = hands;
     this.remainingDeck = remainingDeck;
@@ -120,6 +127,11 @@ export default class ImmutableGameState {
     this.remainingLives = remainingLives;
     this.remainingClues = remainingClues;
     this.leadingMove = leadingMove;
+    this.lastCardPlayerIndex = lastCardPlayerIndex;
+  }
+
+  getRemainingDeckLength() {
+    return this.remainingDeck.length;
   }
 
   canDiscard(): boolean {
@@ -128,6 +140,54 @@ export default class ImmutableGameState {
 
   canGiveClue(): boolean {
     return this.remainingClues > 0;
+  }
+
+  isGameOver(): boolean {
+    return (
+      this.currentTurnPlayerIndex === this.lastCardPlayerIndex ||
+      this.remainingLives === 0
+    );
+  }
+
+  getScore(): number {
+    return _.sum(Object.values(this.playedCards));
+  }
+
+  getMaxScore(): number {
+    const colorToNumberToExists = Object.fromEntries(
+      CARD_COLORS.map((color) => [
+        color,
+        Object.fromEntries(_.range(1, 6).map((number) => [number, false])),
+      ])
+    );
+
+    this.remainingDeck.forEach(
+      (card) =>
+        (colorToNumberToExists[card.asOthers().color][card.asOthers().number] =
+          true)
+    );
+
+    this.hands
+      .flatMap((hand) => hand.asOthers())
+      .forEach(
+        (card) => (colorToNumberToExists[card.color][card.number] = true)
+      );
+
+    Object.entries(this.playedCards).forEach(([color, colorStack]) =>
+      _.range(1, colorStack + 1).forEach(
+        (number) => (colorToNumberToExists[color][number] = true)
+      )
+    );
+
+    return _.sum(
+      CARD_COLORS.map(
+        (color) =>
+          ((_.sortBy(
+            Object.entries(colorToNumberToExists[color]),
+            ([number]) => number
+          ).find(([_, exists]) => !exists)?.[0] as number | undefined) ?? 6) - 1
+      )
+    );
   }
 
   playInteraction(moveQuery: MoveQuery): ImmutableGameState {
@@ -249,7 +309,10 @@ export default class ImmutableGameState {
       discarded,
       remainingLives,
       remainingClues,
-      move
+      move,
+      this.lastCardPlayerIndex ?? newDeck.length === 0
+        ? this.currentTurnPlayerIndex
+        : undefined
     );
   }
 

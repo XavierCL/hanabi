@@ -1,8 +1,8 @@
-import { CardColor, CardNumber } from "./ImmutableCard";
+import { CardColor } from "./ImmutableCard";
 
 export default class ImmutableCardView<
   Color extends CardColor | undefined,
-  Digit extends CardNumber | undefined
+  Digit extends number | undefined
 > {
   readonly cardId: string;
   readonly color: Color;

@@ -1,6 +1,6 @@
 import Card from "./Card";
-import { CardColor, CardNumber } from "./domain/ImmutableCard";
-import ImmutableCardView from "./domain/ImmutableCardView";
+import { CardColor, CardNumber } from "../domain/ImmutableCard";
+import ImmutableCardView from "../domain/ImmutableCardView";
 
 const HandOfCards = ({
   playerName,

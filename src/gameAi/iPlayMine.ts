@@ -135,7 +135,7 @@ export default class GameAi {
       );
 
       if (cardsCanReceiveNumberClue.length) {
-        return cardsCanReceiveColorClue[0];
+        return cardsCanReceiveNumberClue[0];
       }
     }
 

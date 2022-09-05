@@ -1,6 +1,13 @@
 import _ from "lodash";
 import ImmutableCardView from "./ImmutableCardView";
 
+export const CARD_COLORS = [
+  "red",
+  "yellow",
+  "blue",
+  "green",
+  "purple",
+] as const;
 export type CardColor = "red" | "yellow" | "blue" | "green" | "purple";
 export type CardNumber = 1 | 2 | 3 | 4 | 5;
 

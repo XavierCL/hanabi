@@ -1,5 +1,5 @@
-import { CardColor, CardNumber } from "./domain/ImmutableCard";
-import ImmutableCardView from "./domain/ImmutableCardView";
+import { CardColor, CardNumber } from "../domain/ImmutableCard";
+import ImmutableCardView from "../domain/ImmutableCardView";
 import "./Card.css";
 
 const COLOR_MAP: Record<CardColor, { back: string; front: string }> = {
@@ -16,9 +16,11 @@ const Card = ({
   onInteraction,
   canInteract,
   shrink,
+  textShrink,
   colorStyle,
+  showClues,
 }: {
-  card: ImmutableCardView<CardColor | undefined, CardNumber | undefined>;
+  card: ImmutableCardView<CardColor | undefined, number | undefined>;
   ownCardStatus: "discard-and-play" | "play" | "none";
   onInteraction: (
     interaction:
@@ -29,7 +31,9 @@ const Card = ({
   ) => void;
   canInteract: boolean;
   shrink?: number;
+  textShrink?: number;
   colorStyle?: React.CSSProperties;
+  showClues?: boolean;
 }) => {
   const { backColor, frontColor } = (() => {
     if (card.color) {
@@ -38,7 +42,7 @@ const Card = ({
       return { backColor, frontColor };
     }
 
-    return { backColor: "gray", frontColor: "gray" };
+    return { backColor: "gray", frontColor: "black" };
   })();
 
   const interactions = (() => {
@@ -74,10 +78,37 @@ const Card = ({
             }}
           />
         </button>
-        <button onClick={() => onInteraction({ number })}>{number}</button>
+        <button onClick={() => onInteraction({ number: number as CardNumber })}>
+          {number}
+        </button>
       </>
     );
   })();
+
+  const clues = (
+    <>
+      {card.colorClued && (
+        <div
+          style={{
+            backgroundColor: frontColor,
+            height: "15px",
+            width: "20px",
+            boxShadow: "black 0px 0px 1px",
+          }}
+        />
+      )}
+      {card.numberClued && (
+        <div
+          style={{
+            textShadow: "black 0px 0px 1px",
+            fontSize: (textShrink ?? 1) * 20 * (shrink ?? 0.2) * 5,
+          }}
+        >
+          {card.number}
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div
@@ -116,6 +147,19 @@ const Card = ({
       </div>
       <div
         style={{
+          position: "absolute",
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+          width: "100%",
+          bottom: "10%",
+          gap: "5px",
+        }}
+      >
+        {(showClues ?? true) && clues}
+      </div>
+      <div
+        style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -127,7 +171,7 @@ const Card = ({
           style={{
             color: frontColor,
             textShadow: "black 0px 0px 1px",
-            fontSize: 40 * (shrink ?? 0.2) * 5,
+            fontSize: (textShrink ?? 1) * 40 * (shrink ?? 0.2) * 5,
           }}
         >
           {card.number}

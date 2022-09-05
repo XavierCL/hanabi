@@ -1,14 +1,14 @@
 import _ from "lodash";
-import { useEffect, useMemo, useRef, useState } from "react";
-import DiscardedCards from "./DiscardedCards";
+import { useEffect, useState } from "react";
 import ImmutableGameState, {
   Move,
   MoveQuery,
-} from "./domain/ImmutableGameState";
-import GameAi from "./gameAi/iPlayMine";
+} from "../domain/ImmutableGameState";
+import DiscardAndNumbers from "./discardAndNumbers/DiscardAndNumbers";
 import HandOfCard from "./HandOfCard";
 import MoveList from "./MoveList";
 import PlayedCards from "./PlayedCards";
+import useGameAi from "./useGameAi";
 
 const HUMAN_PLAYER_INDEX = 0;
 
@@ -16,13 +16,6 @@ const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
   const [gameHistory, setGameHistory] = useState([
     ImmutableGameState.from(numberOfAi + 1),
   ]);
-
-  const gameAis = useMemo(
-    () => _.range(numberOfAi).map((_) => new GameAi()),
-    [numberOfAi]
-  );
-
-  const lastAiThink = useRef(0);
 
   // Reset game history when number of ai changes
   useEffect(() => {
@@ -42,36 +35,7 @@ const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
 
   const isHumanTurn = currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
 
-  // AI
-  useEffect(() => {
-    if (isHumanTurn || lastAiThink.current >= gameHistory.length) return;
-
-    lastAiThink.current = gameHistory.length;
-
-    setTimeout(() => {
-      const startTime = performance.now();
-      let moveQuery: MoveQuery | undefined = undefined;
-      gameAis.forEach((gameAi, aiIndex) => {
-        const historyView = gameHistory.map((gameState) =>
-          gameState.asView(currentGame.currentTurnPlayerIndex)
-        );
-
-        if (aiIndex + 1 === currentGame.currentTurnPlayerIndex) {
-          moveQuery = gameAi.playOwnTurn(historyView);
-        } else {
-          gameAi.observeOthersTurn(historyView);
-        }
-      });
-
-      const endTime = performance.now();
-
-      setTimeout(() => {
-        if (!moveQuery) throw new Error("AI didn't play");
-
-        onInteraction(moveQuery);
-      }, _.max([1000 - (endTime - startTime), 0]));
-    }, 0);
-  });
+  useGameAi(gameHistory, onInteraction);
 
   return (
     <div style={{ display: "flex", flexDirection: "row", gap: "30px" }}>
@@ -115,14 +79,29 @@ const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
                 onInteraction({ targetPlayerIndex: playerIndex, interaction })
               }
               canInteract={
-                isHumanTurn && (isCurrentTurn || currentGame.canGiveClue())
+                isHumanTurn &&
+                (isCurrentTurn || currentGame.canGiveClue()) &&
+                !currentGame.isGameOver()
               }
             />
           );
         })}
-        <div style={{ display: "flex", flexDirection: "row", gap: "30px" }}>
-          <PlayedCards playedCards={currentGame.playedCards} />
-          <DiscardedCards discarded={currentGame.discarded} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "30px",
+            marginTop: "30px",
+          }}
+        >
+          <PlayedCards
+            currentGame={currentGame}
+            playedCards={currentGame.playedCards}
+          />
+          <DiscardAndNumbers
+            currentGame={currentGame}
+            discarded={currentGame.discarded}
+          />
         </div>
       </div>
     </div>
