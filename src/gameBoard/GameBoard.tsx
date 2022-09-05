@@ -81,7 +81,10 @@ const GameBoard = ({
               key={playerName}
               playerName={playerName}
               cards={cards}
-              isCurrentTurn={currentGame.currentTurnPlayerIndex === playerIndex}
+              isCurrentTurn={
+                currentGame.currentTurnPlayerIndex === playerIndex &&
+                !currentGame.isGameOver()
+              }
               ownCardStatus={(() => {
                 if (!isHuman) return "none";
 

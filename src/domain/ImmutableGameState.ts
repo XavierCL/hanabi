@@ -30,6 +30,7 @@ export type Move = {
 };
 
 export default class ImmutableGameState {
+  readonly turnCount: number;
   readonly hands: readonly ImmutableHand[];
   readonly currentTurnPlayerIndex: number;
   readonly playedCards: Readonly<Record<CardColor, CardNumber | 0>>;
@@ -37,7 +38,7 @@ export default class ImmutableGameState {
   readonly remainingLives: RemainingLives;
   readonly remainingClues: RemainingClues;
   readonly leadingMove: Move | undefined;
-  readonly lastCardPlayerIndex: number | undefined;
+  readonly endTurn: number | undefined;
 
   private readonly remainingDeck: readonly ImmutableCard[];
   private readonly fullDeck: readonly ImmutableCard[];
@@ -93,6 +94,7 @@ export default class ImmutableGameState {
     );
 
     return new ImmutableGameState(
+      0,
       hands,
       startingDeck,
       fullDeck,
@@ -107,6 +109,7 @@ export default class ImmutableGameState {
   }
 
   private constructor(
+    turnCount: number,
     hands: readonly ImmutableHand[],
     remainingDeck: readonly ImmutableCard[],
     fullDeck: readonly ImmutableCard[],
@@ -116,8 +119,9 @@ export default class ImmutableGameState {
     remainingLives: RemainingLives,
     remainingClues: RemainingClues,
     leadingMove: Move | undefined,
-    lastCardPlayerIndex: number | undefined
+    endTurn: number | undefined
   ) {
+    this.turnCount = turnCount;
     this.hands = hands;
     this.remainingDeck = remainingDeck;
     this.fullDeck = fullDeck;
@@ -127,7 +131,7 @@ export default class ImmutableGameState {
     this.remainingLives = remainingLives;
     this.remainingClues = remainingClues;
     this.leadingMove = leadingMove;
-    this.lastCardPlayerIndex = lastCardPlayerIndex;
+    this.endTurn = endTurn;
   }
 
   getRemainingDeckLength() {
@@ -143,10 +147,7 @@ export default class ImmutableGameState {
   }
 
   isGameOver(): boolean {
-    return (
-      this.currentTurnPlayerIndex === this.lastCardPlayerIndex ||
-      this.remainingLives === 0
-    );
+    return this.endTurn === this.turnCount || this.remainingLives === 0;
   }
 
   getScore(): number {
@@ -301,6 +302,7 @@ export default class ImmutableGameState {
     })();
 
     return new ImmutableGameState(
+      this.turnCount + 1,
       newHands,
       newDeck,
       this.fullDeck,
@@ -310,9 +312,10 @@ export default class ImmutableGameState {
       remainingLives,
       remainingClues,
       move,
-      this.lastCardPlayerIndex ?? newDeck.length === 0
-        ? this.currentTurnPlayerIndex
-        : undefined
+      this.endTurn ??
+        (newDeck.length === 0
+          ? this.turnCount + this.hands.length + 1
+          : undefined)
     );
   }
 
