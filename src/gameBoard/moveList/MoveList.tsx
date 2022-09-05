@@ -1,23 +1,33 @@
-import Card from "./Card";
-import { CardColor } from "../domain/ImmutableCard";
-import ImmutableCardView from "../domain/ImmutableCardView";
-import { Move } from "../domain/ImmutableGameState";
+import "./MoveList.css";
+import Card from "../Card";
+import { CardColor } from "../../domain/ImmutableCard";
+import ImmutableCardView from "../../domain/ImmutableCardView";
+import { Move } from "../../domain/ImmutableGameState";
 import { useEffect, useRef } from "react";
 
 const MoveList = ({
   moves,
   startingPlayerIndex,
   playerNames,
+  seenIndex,
+  setSeenIndex,
 }: {
   moves: readonly Move[];
   startingPlayerIndex: number;
   playerNames: readonly string[];
+  seenIndex: number;
+  setSeenIndex: (seenIndex: number) => void;
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (seenIndex !== -1) return;
+
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   });
+
+  const highlightedMoveIndex =
+    seenIndex === -1 ? moves.length - 1 : seenIndex - 1;
 
   return (
     <ol
@@ -106,7 +116,22 @@ const MoveList = ({
           );
         })();
 
-        return <li key={moveIndex}>{template}</li>;
+        return (
+          <li
+            key={moveIndex}
+            className="move-item"
+            style={{
+              backgroundColor:
+                highlightedMoveIndex === moveIndex ? "rgb(214, 214, 214)" : "",
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              setSeenIndex(moveIndex === moves.length - 1 ? -1 : moveIndex + 1);
+            }}
+          >
+            {template}
+          </li>
+        );
       })}
       <div ref={bottomRef} />
     </ol>

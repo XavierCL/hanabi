@@ -3,13 +3,7 @@ import { CardColor, CardNumber, CARD_COLORS } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import ImmutableGameState from "../domain/ImmutableGameState";
 
-const PlayedCards = ({
-  currentGame,
-  playedCards,
-}: {
-  currentGame: ImmutableGameState;
-  playedCards: Readonly<Record<CardColor, CardNumber | 0>>;
-}) => (
+const PlayedCards = ({ currentGame }: { currentGame: ImmutableGameState }) => (
   <div
     style={{
       display: "flex",
@@ -24,7 +18,7 @@ const PlayedCards = ({
     </span>
     <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
       {CARD_COLORS.map((color) => {
-        const playedCardNumber = playedCards[color];
+        const playedCardNumber = currentGame.playedCards[color];
         const shownNumber =
           playedCardNumber === 0 ? undefined : playedCardNumber;
 

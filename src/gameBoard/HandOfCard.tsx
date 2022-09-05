@@ -9,6 +9,7 @@ const HandOfCards = ({
   ownCardStatus,
   onInteraction,
   canInteract,
+  isHistoryMode,
 }: {
   playerName: string;
   cards: readonly ImmutableCardView<
@@ -25,6 +26,7 @@ const HandOfCards = ({
       | { discard: string }
   ) => void;
   canInteract: boolean;
+  isHistoryMode: boolean;
 }) => (
   <div
     style={{
@@ -35,7 +37,14 @@ const HandOfCards = ({
       position: "relative",
     }}
   >
-    <div style={{ position: "absolute", left: "-20px" }}>
+    <div
+      style={{
+        position: "absolute",
+        left: "-20px",
+        color: isHistoryMode ? "beige" : "black",
+        textShadow: "black 0px 0px 1px",
+      }}
+    >
       {isCurrentTurn && "▶"}
     </div>
     <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>

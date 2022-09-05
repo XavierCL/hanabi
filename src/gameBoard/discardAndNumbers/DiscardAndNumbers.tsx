@@ -1,13 +1,10 @@
-import ImmutableCard from "../../domain/ImmutableCard";
 import ImmutableGameState from "../../domain/ImmutableGameState";
 import DiscardedCards from "./DiscardedCards";
 import GameNumberInfo from "./GameNumberInfo";
 
 const DiscardAndNumbers = ({
-  discarded,
   currentGame,
 }: {
-  discarded: readonly ImmutableCard[];
   currentGame: ImmutableGameState;
 }) => (
   <div
@@ -20,7 +17,7 @@ const DiscardAndNumbers = ({
       padding: "10px",
     }}
   >
-    <DiscardedCards discarded={discarded} />
+    <DiscardedCards discarded={currentGame.discarded} />
     <GameNumberInfo currentGame={currentGame} />
   </div>
 );

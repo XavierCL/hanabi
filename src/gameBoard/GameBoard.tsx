@@ -6,7 +6,7 @@ import ImmutableGameState, {
 } from "../domain/ImmutableGameState";
 import DiscardAndNumbers from "./discardAndNumbers/DiscardAndNumbers";
 import HandOfCard from "./HandOfCard";
-import MoveList from "./MoveList";
+import MoveList from "./moveList/MoveList";
 import PlayedCards from "./PlayedCards";
 import useGameAi from "./useGameAi";
 
@@ -19,11 +19,19 @@ const GameBoard = ({
   numberOfPlayer: number;
   hasHuman: boolean;
 }) => {
-  const [gameHistory, setGameHistory] = useState([
-    ImmutableGameState.from(numberOfPlayer),
-  ]);
+  const [gameHistory, setGameHistory] = useState({
+    history: [ImmutableGameState.from(numberOfPlayer)],
+    seenIndex: -1,
+  });
 
-  const currentGame = gameHistory[gameHistory.length - 1];
+  const lastHistoryIndex = gameHistory.history.length - 1;
+  const isHistoryMode = gameHistory.seenIndex !== -1;
+  const currentGame = gameHistory.history[lastHistoryIndex];
+
+  const seenGame =
+    gameHistory.history[
+      gameHistory.seenIndex === -1 ? lastHistoryIndex : gameHistory.seenIndex
+    ];
 
   const firstEffect = useRef(true);
 
@@ -34,11 +42,17 @@ const GameBoard = ({
       return;
     }
 
-    setGameHistory([ImmutableGameState.from(numberOfPlayer)]);
+    setGameHistory({
+      history: [ImmutableGameState.from(numberOfPlayer)],
+      seenIndex: -1,
+    });
   }, [hasHuman, numberOfPlayer]);
 
   const onInteraction = (move: MoveQuery) => {
-    setGameHistory([...gameHistory, currentGame.playInteraction(move)]);
+    setGameHistory(({ seenIndex, history }) => ({
+      history: [...history, history[history.length - 1].playInteraction(move)],
+      seenIndex,
+    }));
   };
 
   const playerNames = [
@@ -51,16 +65,20 @@ const GameBoard = ({
   const isHumanTurn =
     hasHuman && currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
 
-  useGameAi(gameHistory, hasHuman, onInteraction);
+  useGameAi(gameHistory.history, hasHuman, onInteraction);
 
   return (
     <div style={{ display: "flex", flexDirection: "row", gap: "30px" }}>
       <MoveList
-        moves={gameHistory
+        moves={gameHistory.history
           .map((gameState) => gameState.leadingMove)
           .filter((move): move is Move => Boolean(move))}
         playerNames={playerNames}
-        startingPlayerIndex={gameHistory[0].currentTurnPlayerIndex}
+        startingPlayerIndex={gameHistory.history[0].currentTurnPlayerIndex}
+        seenIndex={gameHistory.seenIndex}
+        setSeenIndex={(seenIndex) =>
+          setGameHistory(({ history }) => ({ history, seenIndex }))
+        }
       />
       <div
         style={{
@@ -70,27 +88,25 @@ const GameBoard = ({
           alignItems: "flex-start",
         }}
       >
-        {currentGame.hands.map((hand, playerIndex) => {
+        {seenGame.hands.map((hand, playerIndex) => {
           const isHuman = hasHuman && playerIndex === HUMAN_PLAYER_INDEX;
 
           const playerName = playerNames[playerIndex];
           const cards = isHuman ? hand.asOwn() : hand.asOthers();
           const isCurrentTurn =
-            currentGame.currentTurnPlayerIndex === playerIndex;
+            seenGame.currentTurnPlayerIndex === playerIndex &&
+            !seenGame.isGameOver();
 
           return (
             <HandOfCard
               key={playerName}
               playerName={playerName}
               cards={cards}
-              isCurrentTurn={
-                currentGame.currentTurnPlayerIndex === playerIndex &&
-                !currentGame.isGameOver()
-              }
+              isCurrentTurn={isCurrentTurn}
               ownCardStatus={(() => {
                 if (!isHuman) return "none";
 
-                if (currentGame.canDiscard()) return "discard-and-play";
+                if (seenGame.canDiscard()) return "discard-and-play";
 
                 return "play";
               })()}
@@ -99,9 +115,11 @@ const GameBoard = ({
               }
               canInteract={
                 isHumanTurn &&
-                (isCurrentTurn || currentGame.canGiveClue()) &&
-                !currentGame.isGameOver()
+                (isCurrentTurn || seenGame.canGiveClue()) &&
+                !seenGame.isGameOver() &&
+                !isHistoryMode
               }
+              isHistoryMode={isHistoryMode}
             />
           );
         })}
@@ -113,14 +131,8 @@ const GameBoard = ({
             marginTop: "30px",
           }}
         >
-          <PlayedCards
-            currentGame={currentGame}
-            playedCards={currentGame.playedCards}
-          />
-          <DiscardAndNumbers
-            currentGame={currentGame}
-            discarded={currentGame.discarded}
-          />
+          <PlayedCards currentGame={seenGame} />
+          <DiscardAndNumbers currentGame={seenGame} />
         </div>
       </div>
     </div>
