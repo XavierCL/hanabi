@@ -3,9 +3,10 @@ import { useState } from "react";
 const MenuButtons = ({
   onStartGame,
 }: {
-  onStartGame: (numberOfAi: number) => void;
+  onStartGame: (numberOfAi: number, hasHuman: boolean) => void;
 }) => {
   const [numberOfAiString, setNumberOfAiString] = useState("2");
+  const [hasHuman, setHasHuman] = useState(true);
 
   const getValidNumberOfAi = (): number | undefined => {
     const numberOfAi = Number.parseInt(numberOfAiString);
@@ -31,11 +32,21 @@ const MenuButtons = ({
           }}
         />
       </div>
+      <div>
+        <span>Has human</span>
+        <input
+          type="checkbox"
+          checked={hasHuman}
+          onChange={() => {
+            setHasHuman((value) => !value);
+          }}
+        />
+      </div>
       <button
         onClick={() => {
           if (validNumberOfAi === undefined) return;
 
-          onStartGame(validNumberOfAi);
+          onStartGame(validNumberOfAi, hasHuman);
         }}
         disabled={validNumberOfAi === undefined}
       >

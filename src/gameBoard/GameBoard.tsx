@@ -12,9 +12,15 @@ import useGameAi from "./useGameAi";
 
 const HUMAN_PLAYER_INDEX = 0;
 
-const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
+const GameBoard = ({
+  numberOfAi,
+  hasHuman,
+}: {
+  numberOfAi: number;
+  hasHuman: boolean;
+}) => {
   const [gameHistory, setGameHistory] = useState([
-    ImmutableGameState.from(numberOfAi + 1),
+    ImmutableGameState.from(numberOfAi + Number(hasHuman)),
   ]);
 
   const currentGame = gameHistory[gameHistory.length - 1];
@@ -28,21 +34,22 @@ const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
       return;
     }
 
-    setGameHistory([ImmutableGameState.from(numberOfAi + 1)]);
-  }, [numberOfAi]);
+    setGameHistory([ImmutableGameState.from(numberOfAi + Number(hasHuman))]);
+  }, [hasHuman, numberOfAi]);
 
   const onInteraction = (move: MoveQuery) => {
     setGameHistory([...gameHistory, currentGame.playInteraction(move)]);
   };
 
   const playerNames = [
-    "Human",
+    ...(hasHuman ? ["Human"] : []),
     ..._.range(numberOfAi).map((aiIndex) => `AI ${aiIndex}`),
   ];
 
-  const isHumanTurn = currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
+  const isHumanTurn =
+    hasHuman && currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
 
-  useGameAi(gameHistory, onInteraction);
+  useGameAi(gameHistory, hasHuman, onInteraction);
 
   return (
     <div style={{ display: "flex", flexDirection: "row", gap: "30px" }}>
@@ -62,7 +69,7 @@ const GameBoard = ({ numberOfAi }: { numberOfAi: number }) => {
         }}
       >
         {currentGame.hands.map((hand, playerIndex) => {
-          const isHuman = playerIndex === HUMAN_PLAYER_INDEX;
+          const isHuman = hasHuman && playerIndex === HUMAN_PLAYER_INDEX;
 
           const playerName = playerNames[playerIndex];
           const cards = isHuman ? hand.asOwn() : hand.asOthers();

@@ -7,20 +7,22 @@ const HUMAN_PLAYER_INDEX = 0;
 
 const useGameAi = (
   gameHistory: readonly ImmutableGameState[],
+  hasHuman: boolean,
   onInteraction: (move: MoveQuery) => void
 ) => {
   const currentGame = gameHistory[gameHistory.length - 1];
 
   const lastAiThink = useRef(0);
 
-  const numberOfAi = currentGame.hands.length - 1;
+  const numberOfAi = currentGame.hands.length - Number(hasHuman);
 
   const gameAis = useMemo(
     () => _.range(numberOfAi).map((_) => new GameAi()),
     [numberOfAi]
   );
 
-  const isHumanTurn = currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
+  const isHumanTurn =
+    hasHuman && currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
 
   useEffect(() => {
     if (
@@ -40,7 +42,8 @@ const useGameAi = (
         gameState.asView(currentGame.currentTurnPlayerIndex)
       );
 
-      const currentGameAi = gameAis[currentGame.currentTurnPlayerIndex - 1];
+      const currentGameAi =
+        gameAis[currentGame.currentTurnPlayerIndex - Number(hasHuman)];
       const moveQuery = currentGameAi.playOwnTurn(currentAiHistoryView);
 
       gameAis.forEach((gameAi, aiIndex) => {
@@ -48,16 +51,19 @@ const useGameAi = (
           gameState.asView(currentGame.currentTurnPlayerIndex)
         );
 
-        if (aiIndex + 1 !== currentGame.currentTurnPlayerIndex) {
+        if (aiIndex + Number(hasHuman) !== currentGame.currentTurnPlayerIndex) {
           gameAi.observeOthersTurn(aiGameHistoryView);
         }
       });
 
       const endTime = performance.now();
 
-      setTimeout(() => {
-        onInteraction(moveQuery);
-      }, _.max([1000 - (endTime - startTime), 0]));
+      setTimeout(
+        () => {
+          onInteraction(moveQuery);
+        },
+        hasHuman ? _.max([1000 - (endTime - startTime), 0]) : 0
+      );
     }, 0);
   });
 };
