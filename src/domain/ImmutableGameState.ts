@@ -1,13 +1,12 @@
+import _, { isEqual } from "lodash";
 import ImmutableCard, {
   CardColor,
   CardNumber,
   CARD_COLORS,
 } from "./ImmutableCard";
-import ImmutableHand from "./ImmutableHand";
-import _, { isEqual } from "lodash";
-import ImmutableGameView from "./ImmutableGameView";
 import ImmutableCardView from "./ImmutableCardView";
-import GameAi from "../gameAi/playMineCardElemination";
+import ImmutableGameView from "./ImmutableGameView";
+import ImmutableHand from "./ImmutableHand";
 
 export const MAXIMUM_LIVES = 3;
 type RemainingLives = 3 | 2 | 1 | 0;
@@ -256,11 +255,6 @@ export default class ImmutableGameState {
       --remainingLives;
       discarded.push(playedCard);
 
-      // debug
-      const move2 = new GameAi().playOwnTurn([
-        this.asView(this.currentTurnPlayerIndex),
-      ]);
-
       return newHand;
     };
 
@@ -353,7 +347,8 @@ export default class ImmutableGameState {
       this.currentTurnPlayerIndex,
       this.playedCards,
       this.fullDeckView,
-      this.discarded.map((card) => card.asOthers())
+      this.discarded.map((card) => card.asOthers()),
+      this.leadingMove
     );
   }
 }

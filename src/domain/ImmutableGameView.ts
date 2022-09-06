@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { CardColor, CardNumber } from "./ImmutableCard";
 import ImmutableCardView from "./ImmutableCardView";
-import { MoveQuery, RemainingClues } from "./ImmutableGameState";
+import { Move, MoveQuery, RemainingClues } from "./ImmutableGameState";
 
 export default class ImmutableGameView {
   readonly remainingClues: RemainingClues;
@@ -13,6 +13,7 @@ export default class ImmutableGameView {
   readonly playedCards: Readonly<Record<CardColor, CardNumber | 0>>;
   readonly fullDeck: readonly ImmutableCardView<CardColor, CardNumber>[];
   readonly discarded: readonly ImmutableCardView<CardColor, CardNumber>[];
+  readonly leadingMove: Move | undefined;
 
   constructor(
     remainingClues: RemainingClues,
@@ -23,7 +24,8 @@ export default class ImmutableGameView {
     currentTurnPlayerIndex: number,
     playedCards: Readonly<Record<CardColor, CardNumber | 0>>,
     fullDeck: readonly ImmutableCardView<CardColor, CardNumber>[],
-    discarded: readonly ImmutableCardView<CardColor, CardNumber>[]
+    discarded: readonly ImmutableCardView<CardColor, CardNumber>[],
+    leadingMove: Move | undefined
   ) {
     this.remainingClues = remainingClues;
     this.hands = hands;
@@ -31,6 +33,7 @@ export default class ImmutableGameView {
     this.playedCards = playedCards;
     this.fullDeck = fullDeck;
     this.discarded = discarded;
+    this.leadingMove = leadingMove;
   }
 
   canDiscard(): boolean {
