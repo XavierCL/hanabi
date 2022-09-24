@@ -83,4 +83,20 @@ export default class ImmutableGameView {
       ].map((interaction) => ({ targetPlayerIndex: playerIndex, interaction }));
     });
   }
+
+  asView(playerIndex: number): ImmutableGameView {
+    return new ImmutableGameView(
+      this.remainingClues,
+      this.hands.map((hand, handIndex) =>
+        handIndex === playerIndex
+          ? hand.map((card) => card.asOwn())
+          : hand.map((card) => card.asOthers())
+      ),
+      this.currentTurnPlayerIndex,
+      this.playedCards,
+      this.fullDeck,
+      this.discarded,
+      this.leadingMove
+    );
+  }
 }

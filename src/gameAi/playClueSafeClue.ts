@@ -5,6 +5,7 @@ import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView from "../domain/ImmutableGameView";
 import {
   fallbackMove,
+  getChop,
   getKnownUselessProperties,
   getPlayableCards,
   getPossibleOwnCards,
@@ -17,7 +18,10 @@ Ideas:
 1. No duplication rule
 */
 
-type ClueIntent = "play" | "safe";
+type ClueIntent = {
+  intent: "play" | "safe";
+  possibles: readonly ImmutableCardView<CardColor, CardNumber>[];
+};
 
 export default class GameAi {
   private clueIntent: Record<string, ClueIntent> = {};
@@ -45,31 +49,94 @@ export default class GameAi {
 
     if (!leadingClue) return undefined;
 
-    const chopPosition =
-      inductionStart.hands.length -
-      inductionStart.hands[currentGame.leadingMove.targetPlayerIndex]
-        .slice()
-        .reverse()
-        .findIndex((card) => !card.colorClued && !card.numberClued) -
-      1;
+    const cluedPlayerIndex = currentGame.leadingMove.targetPlayerIndex;
+
+    const chopInfo = getChop(inductionStart, cluedPlayerIndex);
 
     // if there's a chop, does it touch it?
-    if (chopPosition !== inductionStart.hands.length) {
-      const chopCard =
-        inductionStart.hands[currentGame.leadingMove.targetPlayerIndex][
-          chopPosition
-        ];
+    if (chopInfo) {
+      const chopCard = currentGame.hands[cluedPlayerIndex][chopInfo.index];
 
       const clueTouchesChop =
         chopCard.color === leadingClue.color ||
         chopCard.number === leadingClue.number;
 
       if (clueTouchesChop) {
+        // Clue touches chop, is this a dangerous card?
+
+        // Based on the targetted point of view of course
+        const targetPovGame = currentGame.asView(cluedPlayerIndex);
+
+        // todo account for no duplicate convention
+        const possibleCards = getPossibleOwnCards(
+          targetPovGame,
+          cluedPlayerIndex
+        );
+
+        const possibleChopCards = possibleCards[chopInfo.index].possibles;
+        const dangerousCards: readonly ImmutableCardView<
+          CardColor,
+          CardNumber
+        >[] = getSingletonCards(targetPovGame);
+
+        const possibleDangerousCards = possibleChopCards.filter(
+          (possibleCard) =>
+            dangerousCards.some(
+              (dangerousCard) =>
+                possibleCard.color === dangerousCard.color &&
+                possibleCard.number === dangerousCard.number
+            )
+        );
+
+        const playableCards = getPlayableCards(targetPovGame);
+        const possibleDangerousNonPlayableCards = possibleDangerousCards.filter(
+          (card) =>
+            !playableCards.some(
+              (playableCard) =>
+                card.color === playableCard.color &&
+                card.number === playableCard.number
+            )
+        );
+
+        if (possibleDangerousNonPlayableCards.length) {
+          // Clue touches chop and some possible are dangerous and non playable. Safe clue
+          this.clueIntent[chopInfo.chop.cardId] = {
+            intent: "safe",
+            possibles: possibleDangerousNonPlayableCards.concat(
+              possibleChopCards.filter((possible) =>
+                playableCards.some(
+                  (playableCard) =>
+                    possible.color === playableCard.color &&
+                    possible.number === playableCard.number
+                )
+              )
+            ),
+          };
+
+          return;
+        }
+
+        // Clue touches chop but no possible are dangerous and non playable. Play clue on chop.
+        this.clueIntent[chopInfo.chop.cardId] = {
+          intent: "play",
+          possibles: possibleChopCards.filter((possible) =>
+            playableCards.some(
+              (playableCard) =>
+                possible.color === playableCard.color &&
+                possible.number === playableCard.number
+            )
+          ),
+        };
       }
     }
+
+    // Clue does not touch chop, play clue on most recent
+    // todo
+    // todo refactor this function
   }
 
   playOwnTurn(gameHistory: readonly ImmutableGameView[]): MoveQuery {
+    // todo make this function
     const currentGame = gameHistory[gameHistory.length - 1];
     const ownCards = currentGame.hands[currentGame.currentTurnPlayerIndex];
     const ownPossibleCards = getPossibleOwnCards(currentGame);

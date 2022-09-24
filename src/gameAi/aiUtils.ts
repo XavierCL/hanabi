@@ -62,18 +62,18 @@ export type PossibleCards = {
 };
 
 export const getPossibleOwnCards = (
-  currentGame: ImmutableGameView
+  currentGame: ImmutableGameView,
+  targetPlayerIndex?: number
 ): readonly PossibleCards[] => {
-  const ownHand = currentGame.hands[currentGame.currentTurnPlayerIndex];
+  targetPlayerIndex = targetPlayerIndex ?? currentGame.currentTurnPlayerIndex;
+  const ownHand = currentGame.hands[targetPlayerIndex];
   const playedCards = Object.entries(currentGame.playedCards).flatMap(
     ([color, playedNumber]) =>
       _.range(1, playedNumber + 1).map((number) => ({ color, number }))
   );
 
   const othersCards = currentGame.hands
-    .filter(
-      (_hand, handIndex) => handIndex !== currentGame.currentTurnPlayerIndex
-    )
+    .filter((_hand, handIndex) => handIndex !== targetPlayerIndex)
     .flat()
     .filter(
       (card): card is ImmutableCardView<CardColor, CardNumber> =>
@@ -155,4 +155,26 @@ export const getPossibleOwnCards = (
     card: ownHand[cardIndex],
     possibles,
   }));
+};
+
+export const getChop = (
+  currentGame: ImmutableGameView,
+  targetPlayerIndex: number
+) => {
+  const chopIndex =
+    currentGame.hands[targetPlayerIndex].length -
+    currentGame.hands[targetPlayerIndex]
+      .slice()
+      .reverse()
+      .findIndex((card) => !card.colorClued && !card.numberClued) -
+    1;
+
+  if (chopIndex === currentGame.hands[targetPlayerIndex].length) {
+    return undefined;
+  }
+
+  return {
+    index: chopIndex,
+    chop: currentGame.hands[targetPlayerIndex][chopIndex],
+  };
 };
