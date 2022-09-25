@@ -11,12 +11,14 @@ const MoveList = ({
   playerNames,
   seenIndex,
   setSeenIndex,
+  simulateMove,
 }: {
   moves: readonly Move[];
   startingPlayerIndex: number;
   playerNames: readonly string[];
   seenIndex: number;
   setSeenIndex: (seenIndex: number) => void;
+  simulateMove: () => void;
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -128,6 +130,7 @@ const MoveList = ({
             onClick={() => {
               setSeenIndex(moveIndex === moves.length - 1 ? -1 : moveIndex + 1);
             }}
+            onDoubleClick={simulateMove}
           >
             {template}
           </li>

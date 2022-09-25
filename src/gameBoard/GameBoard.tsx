@@ -65,7 +65,11 @@ const GameBoard = ({
   const isHumanTurn =
     hasHuman && currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
 
-  useGameAi(gameHistory.history, hasHuman, onInteraction);
+  const { simulateMove } = useGameAi(
+    gameHistory.history,
+    hasHuman,
+    onInteraction
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "row", gap: "30px" }}>
@@ -79,6 +83,33 @@ const GameBoard = ({
         setSeenIndex={(seenIndex) =>
           setGameHistory(({ history }) => ({ history, seenIndex }))
         }
+        simulateMove={() => {
+          const { leadingMove: knownLeadingMove } =
+            gameHistory.history[
+              gameHistory.seenIndex === -1
+                ? gameHistory.history.length - 1
+                : gameHistory.seenIndex
+            ];
+
+          if (!knownLeadingMove) return;
+
+          const interaction = knownLeadingMove.interaction;
+
+          const knownLeadingMoveQuery = {
+            ...knownLeadingMove,
+            interaction:
+              "play" in interaction
+                ? { play: interaction.play.asOthers().cardId }
+                : "discard" in interaction
+                ? { discard: interaction.discard.asOthers().cardId }
+                : interaction,
+          };
+
+          simulateMove(
+            gameHistory.history.slice(0, gameHistory.seenIndex),
+            knownLeadingMoveQuery
+          );
+        }}
       />
       <div
         style={{

@@ -1,3 +1,7 @@
+.move-item {
+  user-select: none;
+}
+
 .move-item:hover {
   background-color: rgb(230, 230, 230);
 }

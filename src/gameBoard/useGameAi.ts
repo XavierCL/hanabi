@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import ImmutableGameState, { MoveQuery } from "../domain/ImmutableGameState";
 import GameAi from "../gameAi/playClueSaveClue";
 
@@ -9,20 +9,84 @@ const useGameAi = (
   gameHistory: readonly ImmutableGameState[],
   hasHuman: boolean,
   onInteraction: (move: MoveQuery) => void
-) => {
+): {
+  simulateMove: (
+    currentGame: readonly ImmutableGameState[],
+    knownLeadingMove: MoveQuery
+  ) => void;
+} => {
   const currentGame = gameHistory[gameHistory.length - 1];
 
   const lastAiThink = useRef(0);
+  const lastAiObserved = useRef(1);
 
   const numberOfAi = currentGame.hands.length - Number(hasHuman);
 
-  const gameAis = useMemo(
-    () => _.range(numberOfAi).map((_) => new GameAi()),
-    [numberOfAi]
-  );
+  const gameAis = useRef(
+    _.range(numberOfAi).map((_) => [new GameAi()])
+  ).current;
 
   const isHumanTurn =
     hasHuman && currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
+
+  const observeLastMove = useCallback(
+    (simHistory: readonly ImmutableGameState[]) => {
+      return gameAis.map((gameAi, aiIndex) => {
+        const playerIndex = aiIndex + Number(hasHuman);
+
+        const aiGameHistoryView = simHistory.map((gameState) =>
+          gameState.asView(playerIndex)
+        );
+
+        return gameAi[simHistory.length - 2].observeOthersTurn(
+          aiGameHistoryView
+        );
+      });
+    },
+    [gameAis, hasHuman]
+  );
+
+  const computeMove = (
+    simHistory: readonly ImmutableGameState[],
+    knownLeadingMove?: MoveQuery
+  ): MoveQuery => {
+    const game = simHistory[simHistory.length - 1];
+    const isHuman =
+      hasHuman && game.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
+
+    const nextMove = (() => {
+      if (isHuman) return knownLeadingMove!;
+
+      const currentAiHistoryView = simHistory.map((gameState) =>
+        gameState.asView(game.currentTurnPlayerIndex)
+      );
+
+      const currentGameAi =
+        gameAis[game.currentTurnPlayerIndex - Number(hasHuman)][
+          simHistory.length - 1
+        ];
+
+      return currentGameAi.playOwnTurn(currentAiHistoryView);
+    })();
+
+    // This is a fake simulation, fake observation as well
+    if (knownLeadingMove) {
+      const nextHistory = [...simHistory, game.playInteraction(nextMove)];
+      observeLastMove(nextHistory);
+    }
+
+    return nextMove;
+  };
+
+  useEffect(() => {
+    if (lastAiObserved.current >= gameHistory.length) return;
+
+    lastAiObserved.current = gameHistory.length;
+
+    observeLastMove(gameHistory).forEach((nextGameAi, aiIndex) =>
+      gameAis[aiIndex].push(nextGameAi)
+    );
+  }, [gameAis, gameHistory, observeLastMove]);
 
   useEffect(() => {
     if (
@@ -38,27 +102,7 @@ const useGameAi = (
     setTimeout(() => {
       const startTime = performance.now();
 
-      const currentAiHistoryView = gameHistory.map((gameState) =>
-        gameState.asView(currentGame.currentTurnPlayerIndex)
-      );
-
-      const currentGameAi =
-        gameAis[currentGame.currentTurnPlayerIndex - Number(hasHuman)];
-      const moveQuery = currentGameAi.playOwnTurn(currentAiHistoryView);
-      const nextHistory = [
-        ...gameHistory,
-        currentGame.playInteraction(moveQuery),
-      ];
-
-      gameAis.forEach((gameAi, aiIndex) => {
-        const playerIndex = aiIndex + Number(hasHuman);
-
-        const aiGameHistoryView = nextHistory.map((gameState) =>
-          gameState.asView(playerIndex)
-        );
-
-        gameAi.observeOthersTurn(aiGameHistoryView);
-      });
+      const moveQuery = computeMove(gameHistory);
 
       const endTime = performance.now();
 
@@ -70,6 +114,8 @@ const useGameAi = (
       );
     }, 0);
   });
+
+  return { simulateMove: computeMove };
 };
 
 export default useGameAi;

@@ -53,7 +53,7 @@ export const getCardUsefulness = (
     }));
   }).concat(
     Object.entries(currentGame.playedCards).flatMap(([color, number]) =>
-      _.range(number).map((x) => ({
+      _.range(1, number + 1).map((x) => ({
         color: color as CardColor,
         number: x as CardNumber,
       }))
@@ -153,9 +153,9 @@ export const getPossibleOwnCards = (
     return false;
   });
 
-  let nextPossibleCards = _.range(currentGame.hands[0].length).map(
-    () => allUnknownCards
-  );
+  let nextPossibleCards = _.range(
+    currentGame.hands[targetPlayerIndex].length
+  ).map(() => allUnknownCards);
 
   let nextCounts = nextPossibleCards.map((cards) => cards.length);
   let previousCounts = undefined;
