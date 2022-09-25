@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { useEffect, useMemo, useRef } from "react";
 import ImmutableGameState, { MoveQuery } from "../domain/ImmutableGameState";
-import GameAi from "../gameAi/playMineCardElimination";
+import GameAi from "../gameAi/playClueSaveClue";
 
 const HUMAN_PLAYER_INDEX = 0;
 
@@ -45,15 +45,19 @@ const useGameAi = (
       const currentGameAi =
         gameAis[currentGame.currentTurnPlayerIndex - Number(hasHuman)];
       const moveQuery = currentGameAi.playOwnTurn(currentAiHistoryView);
+      const nextHistory = [
+        ...gameHistory,
+        currentGame.playInteraction(moveQuery),
+      ];
 
       gameAis.forEach((gameAi, aiIndex) => {
-        const aiGameHistoryView = gameHistory.map((gameState) =>
-          gameState.asView(currentGame.currentTurnPlayerIndex)
+        const playerIndex = aiIndex + Number(hasHuman);
+
+        const aiGameHistoryView = nextHistory.map((gameState) =>
+          gameState.asView(playerIndex)
         );
 
-        if (aiIndex + Number(hasHuman) !== currentGame.currentTurnPlayerIndex) {
-          gameAi.observeOthersTurn(aiGameHistoryView);
-        }
+        gameAi.observeOthersTurn(aiGameHistoryView);
       });
 
       const endTime = performance.now();

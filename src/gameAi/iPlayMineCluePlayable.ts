@@ -149,11 +149,8 @@ const getOwnKnownUselessCard = (
 ): MoveQuery | undefined => {
   const ownCards = currentGame.hands[currentGame.currentTurnPlayerIndex];
 
-  const {
-    uselessColors,
-    smallestUselessNumber: largestUselessNumber,
-    uselessCards,
-  } = getCardUsefulness(currentGame);
+  const { uselessColors, uselessNumbers, uselessCards } =
+    getCardUsefulness(currentGame);
 
   const discardableOwnCard = ownCards.find((card) => {
     if (!card.color && !card.number) return false;
@@ -163,7 +160,7 @@ const getOwnKnownUselessCard = (
     }
 
     if (card.number) {
-      if (card.number <= largestUselessNumber) return true;
+      if (uselessNumbers.has(card.number)) return true;
     }
 
     if (card.color && card.number) {

@@ -16,6 +16,7 @@ import {
 
 /*
 Ideas:
+0.5. Save clue
 1. No duplication rule
 5. 5 saves with number only
 4. Chop move 5
@@ -27,6 +28,7 @@ Ideas:
 6.5 prioritize next person's clue
 8. bluff
 7. Play ones reverse
+8. End game management
 */
 
 type ClueIntent = {
@@ -82,38 +84,33 @@ export default class GameAi {
         // Clue touches chop, is this a dangerous card?
 
         const possibleChopCards = possibleCards[chopInfo.index].possibles;
-        const dangerousCards: { color: CardColor; number: CardNumber }[] =
-          getSingletonCards(targetPovGame);
-
-        const possibleDangerousCards = possibleChopCards.filter(
-          (possibleCard) =>
-            dangerousCards.some(
-              (dangerousCard) =>
-                possibleCard.color === dangerousCard.color &&
-                possibleCard.number === dangerousCard.number
-            )
+        const dangerousCards = new Set(
+          getSingletonCards(targetPovGame).map(hashCard)
         );
 
-        const playableCards = getPlayableCards(targetPovGame);
+        const possibleDangerousCards = possibleChopCards.filter(
+          (possibleCard) => dangerousCards.has(hashCard(possibleCard))
+        );
+
+        const playableCards = new Set(
+          getPlayableCards(targetPovGame).map(hashCard)
+        );
+
         const possibleDangerousNonPlayableCards = possibleDangerousCards.filter(
-          (card) =>
-            !playableCards.some(
-              (playableCard) =>
-                card.color === playableCard.color &&
-                card.number === playableCard.number
-            )
+          (card) => !playableCards.has(hashCard(card))
         );
 
         const possiblePlayableCards = possibleChopCards.filter((possible) =>
-          playableCards.some(
-            (playableCard) =>
-              possible.color === playableCard.color &&
-              possible.number === playableCard.number
-          )
+          playableCards.has(hashCard(possible))
         );
 
         if (possibleDangerousNonPlayableCards.length) {
           // Clue touches chop and some possible are dangerous and non playable. Safe clue
+          console.log(
+            "Save clue",
+            chopInfo.chop,
+            possibleDangerousNonPlayableCards
+          );
           this.clueIntent[chopInfo.chop.cardId] = {
             intent: "safe",
             possibles: possibleDangerousNonPlayableCards.concat(
@@ -125,6 +122,7 @@ export default class GameAi {
         }
 
         // Clue touches chop but no possible are dangerous and non playable. Play clue on chop.
+        console.log("Play clue on chop", chopInfo.chop);
         this.clueIntent[chopInfo.chop.cardId] = {
           intent: "play",
           possibles: possiblePlayableCards,
@@ -135,11 +133,15 @@ export default class GameAi {
     // Clue does not touch chop, play clue on most recent
     const mostRecentTouched = inductionStart.hands[cluedPlayerIndex].findIndex(
       (card) =>
-        !card.isClued() ??
+        !card.isClued() &&
         (card.color === leadingClue.color || card.number === leadingClue.number)
     );
 
     if (mostRecentTouched !== -1) {
+      console.log(
+        "Play clue",
+        currentGame.hands[cluedPlayerIndex][mostRecentTouched]
+      );
       this.clueIntent[
         currentGame.hands[cluedPlayerIndex][mostRecentTouched].cardId
       ] = {
@@ -269,6 +271,7 @@ const playIntentOwnPlayableCard = (
     currentGame.currentTurnPlayerIndex
   ].find(
     (card, cardIndex) =>
+      card.cardId in clueIntents &&
       clueIntents[card.cardId].intent === "play" &&
       ownCards[cardIndex].possibles.some((possibleCard) =>
         playableHashes.has(hashCard(possibleCard))
@@ -299,15 +302,45 @@ const getPlayClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
   ) => {
     const hand = currentGame.hands[targetPlayerIndex];
 
-    if (chopIndex) {
+    const isConsideredASaveClue = (() => {
+      if (chopIndex === undefined) return false;
+
       const chop = hand[chopIndex];
+
       if (
-        ("color" in clue && chop.color === clue.color) ||
-        ("number" in clue && chop.number === clue.number)
+        (!("color" in clue) || chop.color !== clue.color) &&
+        (!("number" in clue) || chop.number !== clue.number)
       ) {
         return false;
       }
-    }
+
+      // todo play current game before getting possibles
+
+      const possibleChops = getPossibleOwnCards(
+        currentGame.asView(targetPlayerIndex),
+        targetPlayerIndex
+      )[chopIndex].possibles;
+
+      const dangerousCards = new Set(
+        getSingletonCards(currentGame).map(hashCard)
+      );
+
+      console.log(
+        "Possible play clue:",
+        clue,
+        possibleChops,
+        dangerousCards,
+        possibleChops.some((possibleChop) =>
+          dangerousCards.has(hashCard(possibleChop))
+        )
+      );
+
+      return possibleChops.some((possibleChop) =>
+        dangerousCards.has(hashCard(possibleChop))
+      );
+    })();
+
+    if (isConsideredASaveClue) return false;
 
     const firstTouched = hand.find(
       (card): card is ImmutableCardView<CardColor, CardNumber> =>
@@ -354,68 +387,48 @@ const getPlayClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
 
 const getSaveClue = (
   currentGame: ImmutableGameView,
-  desperate: boolean = false
+  _desperate: boolean = false
 ): MoveQuery | undefined => {
-  // todo this is currently a play clue
-  const playableHashes = new Set(
-    getPlayableCards(currentGame, true).map(hashCard)
+  // todo desperate
+  const dangerousCardHashes = new Set(
+    getSingletonCards(currentGame).map(hashCard)
   );
 
-  const isGoodPlayClue = (
-    clue: { color: CardColor } | { number: CardNumber },
-    targetPlayerIndex: number,
-    chopIndex: number | undefined
-  ) => {
-    const hand = currentGame.hands[targetPlayerIndex];
+  let checkingPlayerIndex =
+    (currentGame.currentTurnPlayerIndex + 1) % currentGame.hands.length;
 
-    if (chopIndex) {
-      const chop = hand[chopIndex];
-      if (
-        ("color" in clue && chop.color === clue.color) ||
-        ("number" in clue && chop.number === clue.number)
-      ) {
-        return false;
-      }
+  const getSaveClueForPlayer = (playerIndex: number) => {
+    const chop = getChop(currentGame, playerIndex);
+
+    if (!chop) return undefined;
+
+    const hand = currentGame.hands[playerIndex] as readonly ImmutableCardView<
+      CardColor,
+      CardNumber
+    >[];
+
+    if (!dangerousCardHashes.has(hashCard(hand[chop.index]))) {
+      return undefined;
     }
 
-    const firstTouched = hand.find(
-      (card): card is ImmutableCardView<CardColor, CardNumber> =>
-        !card.isClued() &&
-        (("color" in clue && clue.color === card.color) ||
-          ("number" in clue && clue.number === card.number))
-    );
-
-    // todo if other touched are duplicated, this is a bad move
-
-    if (!firstTouched) return false;
-
-    return playableHashes.has(hashCard(firstTouched));
+    return _.shuffle<MoveQuery>([
+      {
+        interaction: { color: hand[chop.index].color },
+        targetPlayerIndex: playerIndex,
+      },
+      {
+        interaction: { number: hand[chop.index].number },
+        targetPlayerIndex: playerIndex,
+      },
+    ])[0];
   };
 
-  const getPlayClues = () =>
-    currentGame.hands.flatMap((hand, playerIndex) => {
-      if (playerIndex === currentGame.currentTurnPlayerIndex) return [];
+  while (checkingPlayerIndex !== currentGame.currentTurnPlayerIndex) {
+    const saveClue = getSaveClueForPlayer(checkingPlayerIndex);
 
-      const possibleClues = CARD_COLORS.map<
-        { color: CardColor } | { number: CardNumber }
-      >((color) => ({ color })).concat(
-        _.range(1, 6).map((number) => ({ number: number as CardNumber }))
-      );
+    if (saveClue) return saveClue;
 
-      const chopInfo = getChop(currentGame, playerIndex);
-
-      return possibleClues
-        .filter((clue) => isGoodPlayClue(clue, playerIndex, chopInfo?.index))
-        .map((clue) => ({ interaction: clue, targetPlayerIndex: playerIndex }));
-    });
-
-  const playClues = getPlayClues();
-
-  // Todo sort by lowest then most occurrences of color out
-  const shuffledPlayClues = _.shuffle(playClues);
-
-  if (shuffledPlayClues.length) {
-    return shuffledPlayClues[0];
+    checkingPlayerIndex = (checkingPlayerIndex + 1) % currentGame.hands.length;
   }
 
   return undefined;

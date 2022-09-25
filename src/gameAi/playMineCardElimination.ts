@@ -11,6 +11,8 @@ import {
   PossibleCards,
 } from "./aiUtils";
 
+// average score: 16 <= 21
+
 /*
 Ideas:
 1. Why this safe AI kills the game sometimes
