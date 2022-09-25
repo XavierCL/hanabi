@@ -3,11 +3,7 @@ import { CardColor, CardNumber } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView from "../domain/ImmutableGameView";
-import {
-  fallbackMove,
-  getKnownUselessProperties,
-  getPlayableCards,
-} from "./aiUtils";
+import { fallbackMove, getCardUsefulness, getPlayableCards } from "./aiUtils";
 
 /*
 Ideas:
@@ -153,8 +149,11 @@ const getOwnKnownUselessCard = (
 ): MoveQuery | undefined => {
   const ownCards = currentGame.hands[currentGame.currentTurnPlayerIndex];
 
-  const { uselessColors, largestUselessNumber, uselessCards } =
-    getKnownUselessProperties(currentGame);
+  const {
+    uselessColors,
+    smallestUselessNumber: largestUselessNumber,
+    uselessCards,
+  } = getCardUsefulness(currentGame);
 
   const discardableOwnCard = ownCards.find((card) => {
     if (!card.color && !card.number) return false;

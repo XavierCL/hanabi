@@ -1,11 +1,18 @@
 import _ from "lodash";
-import { CardColor, CardNumber } from "../domain/ImmutableCard";
+import { CardColor, CardNumber, CARD_COLORS } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView from "../domain/ImmutableGameView";
 
+export const hashCard = (card: { color: CardColor; number: CardNumber }) =>
+  JSON.stringify({ color: card.color, number: card.number });
+
+export const hashCard2 = (color: CardColor, number: CardNumber) =>
+  JSON.stringify({ color, number });
+
 export const getPlayableCards = (
-  currentGame: ImmutableGameView
+  currentGame: ImmutableGameView,
+  _noDuplicate: boolean = false
 ): { number: CardNumber; color: CardColor }[] =>
   Object.entries(currentGame.playedCards).flatMap(([color, number]) =>
     number < 5
@@ -13,39 +20,84 @@ export const getPlayableCards = (
       : []
   );
 
-export const getKnownUselessProperties = (
+export const getCardUsefulness = (
   currentGame: ImmutableGameView
 ): {
-  largestUselessNumber: CardNumber | 0;
+  uselessNumbers: Set<CardNumber>;
   uselessColors: Set<CardColor>;
   uselessCards: readonly { color: CardColor; number: CardNumber }[];
+  usefulCards: readonly { color: CardColor; number: CardNumber }[];
 } => {
-  const largestUselessNumber = Object.entries(currentGame.playedCards).reduce<
-    CardNumber | 0
-  >(
-    (minUseless, [_, currentPlayed]) =>
-      currentPlayed < minUseless ? currentPlayed : minUseless,
-    5
+  const hashToCount = Object.fromEntries(
+    CARD_COLORS.flatMap((color) =>
+      _.range(1, 6).map<[string, number]>((n) => [
+        hashCard2(color, n as CardNumber),
+        0,
+      ])
+    )
   );
 
-  const uselessColors = new Set(
-    Object.entries(currentGame.playedCards)
-      .filter(([_, number]) => number === 5)
-      .map(([color]) => color as CardColor)
-  );
+  currentGame.fullDeck.forEach((card) => (hashToCount[hashCard(card)] += 1));
+  currentGame.discarded.forEach((card) => (hashToCount[hashCard(card)] -= 1));
 
-  const uselessCards = Object.entries(currentGame.playedCards).flatMap(
-    ([color, number]) =>
+  const uselessCards = CARD_COLORS.flatMap((color) => {
+    const firstMissing = _.range(1, 6).find(
+      (number) => hashToCount[hashCard2(color, number as CardNumber)] <= 0
+    );
+
+    if (!firstMissing) return [];
+
+    return _.range(firstMissing, 6).map((missingNumber) => ({
+      color: color as CardColor,
+      number: missingNumber as CardNumber,
+    }));
+  }).concat(
+    Object.entries(currentGame.playedCards).flatMap(([color, number]) =>
       _.range(number).map((x) => ({
         color: color as CardColor,
         number: x as CardNumber,
       }))
+    )
+  );
+
+  const uselessHashes = new Set(uselessCards.map(hashCard));
+  const usefulHashToCard: Record<
+    string,
+    ImmutableCardView<CardColor, CardNumber>
+  > = {};
+
+  currentGame.fullDeck.forEach((card) =>
+    uselessHashes.has(hashCard(card))
+      ? undefined
+      : (usefulHashToCard[hashCard(card)] = card)
+  );
+  const usefulCards = Object.values(usefulHashToCard);
+
+  const isNumberUseful = Object.fromEntries(
+    _.range(1, 6).map((number) => [number, false])
+  );
+  usefulCards.forEach((card) => (isNumberUseful[card.number] = true));
+  const uselessNumbers = new Set(
+    Object.entries(isNumberUseful)
+      .filter(([_number, isUseful]) => !isUseful)
+      .map(([number]) => Number(number) as CardNumber)
+  );
+
+  const isColorUseful = Object.fromEntries(
+    CARD_COLORS.map((color) => [color, false])
+  );
+  usefulCards.forEach((card) => (isColorUseful[card.color] = true));
+  const uselessColors = new Set(
+    Object.entries(isColorUseful)
+      .filter(([_color, isUseful]) => !isUseful)
+      .map(([color]) => color as CardColor)
   );
 
   return {
-    largestUselessNumber,
+    uselessNumbers,
     uselessColors,
     uselessCards,
+    usefulCards,
   };
 };
 
@@ -61,6 +113,7 @@ export type PossibleCards = {
   possibles: readonly ImmutableCardView<CardColor, CardNumber>[];
 };
 
+// todo should iterate other's possible cards too since this might be a derived pov
 export const getPossibleOwnCards = (
   currentGame: ImmutableGameView,
   targetPlayerIndex?: number
@@ -177,4 +230,23 @@ export const getChop = (
     index: chopIndex,
     chop: currentGame.hands[targetPlayerIndex][chopIndex],
   };
+};
+
+// Return useful cards that only remain in one occurence. Only takes in account the discard.
+export const getSingletonCards = (currentGame: ImmutableGameView) => {
+  const { usefulCards } = getCardUsefulness(currentGame);
+
+  const hashToCount = Object.fromEntries(
+    CARD_COLORS.flatMap((color) =>
+      _.range(1, 6).map<[string, number]>((n) => [
+        hashCard2(color, n as CardNumber),
+        0,
+      ])
+    )
+  );
+
+  currentGame.fullDeck.forEach((card) => (hashToCount[hashCard(card)] += 1));
+  currentGame.discarded.forEach((card) => (hashToCount[hashCard(card)] -= 1));
+
+  return usefulCards.filter((card) => hashToCount[hashCard(card)] === 1);
 };

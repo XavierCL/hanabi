@@ -5,7 +5,7 @@ import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView from "../domain/ImmutableGameView";
 import {
   fallbackMove,
-  getKnownUselessProperties,
+  getCardUsefulness,
   getPlayableCards,
   getPossibleOwnCards,
   PossibleCards,
@@ -166,15 +166,15 @@ const getOwnKnownUselessCard = (
   currentGame: ImmutableGameView,
   ownCards: readonly PossibleCards[]
 ): MoveQuery | undefined => {
-  const { uselessColors, largestUselessNumber, uselessCards } =
-    getKnownUselessProperties(currentGame);
+  const { uselessColors, uselessNumbers, uselessCards } =
+    getCardUsefulness(currentGame);
 
   const discardableOwnCard = ownCards.find(({ card, possibles }) => {
     if (
       possibles.every(
         (possibleCard) =>
           uselessColors.has(possibleCard.color) ||
-          possibleCard.number <= largestUselessNumber ||
+          uselessNumbers.has(possibleCard.number) ||
           uselessCards.some(
             (uselessCard) =>
               uselessCard.color === possibleCard.color &&

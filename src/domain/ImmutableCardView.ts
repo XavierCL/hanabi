@@ -55,4 +55,8 @@ export default class ImmutableCardView<
       CardNumber | undefined
     >;
   }
+
+  isClued(): boolean {
+    return this.colorClued || this.numberClued;
+  }
 }
