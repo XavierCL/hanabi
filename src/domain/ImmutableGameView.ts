@@ -3,6 +3,13 @@ import { CardColor, CardNumber } from "./ImmutableCard";
 import ImmutableCardView from "./ImmutableCardView";
 import { Move, MoveQuery, RemainingClues } from "./ImmutableGameState";
 
+export type OwnHand = readonly ImmutableCardView<
+  CardColor | undefined,
+  CardNumber | undefined
+>[];
+
+export type OthersHand = readonly ImmutableCardView<CardColor, CardNumber>[];
+
 export default class ImmutableGameView {
   readonly remainingClues: RemainingClues;
   readonly hands: readonly (readonly ImmutableCardView<

@@ -4,6 +4,7 @@ import {
   isCardColor,
   isCardNumber,
 } from "./ImmutableCard";
+import { MoveQuery } from "./ImmutableGameState";
 
 export default class ImmutableCardView<
   Color extends CardColor | undefined,
@@ -58,5 +59,16 @@ export default class ImmutableCardView<
 
   isClued(): boolean {
     return this.colorClued || this.numberClued;
+  }
+
+  addsInformation(possibleClue: MoveQuery): boolean {
+    return (
+      ("color" in possibleClue.interaction &&
+        this.color === possibleClue.interaction.color &&
+        !this.colorClued) ||
+      ("number" in possibleClue.interaction &&
+        this.number === possibleClue.interaction.number &&
+        !this.numberClued)
+    );
   }
 }

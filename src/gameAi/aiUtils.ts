@@ -2,7 +2,10 @@ import _ from "lodash";
 import { CardColor, CardNumber, CARD_COLORS } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery } from "../domain/ImmutableGameState";
-import ImmutableGameView from "../domain/ImmutableGameView";
+import ImmutableGameView, {
+  OthersHand,
+  OwnHand,
+} from "../domain/ImmutableGameView";
 
 export const hashCard = (card: { color: CardColor; number: CardNumber }) =>
   JSON.stringify({ color: card.color, number: card.number });
@@ -249,4 +252,67 @@ export const getSingletonCards = (currentGame: ImmutableGameView) => {
   currentGame.discarded.forEach((card) => (hashToCount[hashCard(card)] -= 1));
 
   return usefulCards.filter((card) => hashToCount[hashCard(card)] === 1);
+};
+
+export const getOrderedOtherPlayerIndices = (
+  currentGame: ImmutableGameView
+): readonly number[] => {
+  let checkingPlayerIndex =
+    (currentGame.currentTurnPlayerIndex + 1) % currentGame.hands.length;
+  const otherIndices = [];
+
+  while (checkingPlayerIndex !== currentGame.currentTurnPlayerIndex) {
+    otherIndices.push(checkingPlayerIndex);
+    checkingPlayerIndex = (checkingPlayerIndex + 1) % currentGame.hands.length;
+  }
+
+  return otherIndices;
+};
+
+type OrderedOtherHands = readonly {
+  playerIndex: number;
+  cards: readonly ImmutableCardView<CardColor, CardNumber>[];
+}[];
+
+export const getOrderedOtherHands = (
+  currentGame: ImmutableGameView
+): OrderedOtherHands =>
+  getOrderedOtherPlayerIndices(currentGame).map((playerIndex) => ({
+    playerIndex,
+    cards: currentGame.hands[playerIndex] as readonly ImmutableCardView<
+      CardColor,
+      CardNumber
+    >[],
+  }));
+
+export const getTouchedIndices = (
+  hand: OwnHand,
+  clue: MoveQuery
+): readonly number[] =>
+  hand
+    .map((card, cardIndex) => ({ card, cardIndex }))
+    .filter(
+      ({ card }) =>
+        ("color" in clue.interaction &&
+          card.color === clue.interaction.color) ||
+        ("number" in clue.interaction &&
+          card.number === clue.interaction.number)
+    )
+    .map(({ cardIndex }) => cardIndex);
+
+export const getPossibleClues = (
+  targetPlayerIndex: number,
+  hand: OthersHand
+): readonly MoveQuery[] => {
+  const allClues = CARD_COLORS.map<MoveQuery>((color) => ({
+    targetPlayerIndex,
+    interaction: { color },
+  })).concat(
+    _.range(1, 6).map((number) => ({
+      targetPlayerIndex,
+      interaction: { number: number as CardNumber },
+    }))
+  );
+
+  return allClues.filter((clue) => getTouchedIndices(hand, clue).length > 0);
 };
