@@ -1,5 +1,10 @@
 import _ from "lodash";
-import { CardColor, CardNumber, CARD_COLORS } from "../domain/ImmutableCard";
+import {
+  CardColor,
+  CardNumber,
+  CARD_COLORS,
+  CARD_NUMBERS,
+} from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView, {
@@ -13,16 +18,6 @@ export const hashCard = (card: { color: CardColor; number: CardNumber }) =>
 export const hashCard2 = (color: CardColor, number: CardNumber) =>
   JSON.stringify({ color, number });
 
-export const getPlayableCards = (
-  currentGame: ImmutableGameView,
-  _noDuplicate: boolean = false
-): { number: CardNumber; color: CardColor }[] =>
-  Object.entries(currentGame.playedCards).flatMap(([color, number]) =>
-    number < 5
-      ? [{ color: color as CardColor, number: (number + 1) as CardNumber }]
-      : []
-  );
-
 export const getCardUsefulness = (
   currentGame: ImmutableGameView
 ): {
@@ -33,7 +28,7 @@ export const getCardUsefulness = (
 } => {
   const hashToCount = Object.fromEntries(
     CARD_COLORS.flatMap((color) =>
-      _.range(1, 6).map<[string, number]>((n) => [
+      CARD_NUMBERS.map<[string, number]>((n) => [
         hashCard2(color, n as CardNumber),
         0,
       ])
@@ -44,7 +39,7 @@ export const getCardUsefulness = (
   currentGame.discarded.forEach((card) => (hashToCount[hashCard(card)] -= 1));
 
   const uselessCards = CARD_COLORS.flatMap((color) => {
-    const firstMissing = _.range(1, 6).find(
+    const firstMissing = CARD_NUMBERS.find(
       (number) => hashToCount[hashCard2(color, number as CardNumber)] <= 0
     );
 
@@ -77,7 +72,7 @@ export const getCardUsefulness = (
   const usefulCards = Object.values(usefulHashToCard);
 
   const isNumberUseful = Object.fromEntries(
-    _.range(1, 6).map((number) => [number, false])
+    CARD_NUMBERS.map((number) => [number, false])
   );
   usefulCards.forEach((card) => (isNumberUseful[card.number] = true));
   const uselessNumbers = new Set(
@@ -102,6 +97,102 @@ export const getCardUsefulness = (
     uselessCards,
     usefulCards,
   };
+};
+
+export const getPlayableCards = (
+  currentGame: ImmutableGameView,
+  _noDuplicate: boolean = false
+): { number: CardNumber; color: CardColor }[] => {
+  const { uselessColors } = getCardUsefulness(currentGame);
+  const usefulColors = CARD_COLORS.filter((color) => !uselessColors.has(color));
+  return usefulColors.map((color) => ({
+    color,
+    number: (currentGame.playedCards[color] + 1) as CardNumber,
+  }));
+};
+
+export type ClueIntent = {
+  intent: "play" | "save";
+  possibles: readonly ImmutableCardView<CardColor, CardNumber>[];
+};
+
+export const getLayeredPlayableCards = (
+  currentGame: ImmutableGameView,
+  clueIntent: Readonly<Partial<Record<string, ClueIntent>>>,
+  certain = false
+) => {
+  const immediatePlayableCards = getPlayableCards(currentGame);
+
+  const colorNextPlayable = Object.fromEntries(
+    immediatePlayableCards.map(({ color, number }) => [color, number])
+  );
+  let nextPlayableChanged = true;
+  const incrementNextPlayable = (color: CardColor) => {
+    if (!(color in colorNextPlayable)) return;
+
+    const nextPlayable = (colorNextPlayable[color] + 1) as CardNumber | 6;
+    nextPlayableChanged = true;
+
+    if (nextPlayable === 6) {
+      delete colorNextPlayable[color];
+      return;
+    }
+
+    colorNextPlayable[color] = nextPlayable;
+  };
+
+  const deleteNextPlayable = (color: CardColor) => {
+    if (!(color in colorNextPlayable)) return;
+
+    delete colorNextPlayable[color];
+    nextPlayableChanged = true;
+  };
+
+  while (nextPlayableChanged) {
+    nextPlayableChanged = false;
+
+    currentGame.hands.flat().forEach((card) => {
+      if (
+        card.colorClued &&
+        card.color &&
+        card.numberClued &&
+        card.color in colorNextPlayable &&
+        colorNextPlayable[card.color] === card.number
+      ) {
+        incrementNextPlayable(card.color);
+        return;
+      }
+
+      const cardClueIntent = clueIntent[card.cardId];
+
+      if (cardClueIntent?.intent === "play") {
+        const nextPossiblePlayableColors = new Set<CardColor>();
+        cardClueIntent.possibles.forEach((card) => {
+          if (colorNextPlayable[card.color] === card.number) {
+            nextPossiblePlayableColors.add(card.color);
+          }
+        });
+
+        if (nextPossiblePlayableColors.size === 1) {
+          incrementNextPlayable([...nextPossiblePlayableColors][0]);
+        } else if (certain) {
+          // When getting certain next playable only, and you're not sure about a card, then make all possible color fuzzy
+          nextPossiblePlayableColors.forEach((color) =>
+            deleteNextPlayable(color)
+          );
+        } else {
+          nextPossiblePlayableColors.forEach((color) =>
+            incrementNextPlayable(color)
+          );
+        }
+      }
+    });
+  }
+
+  return Object.entries(colorNextPlayable).map(([color, number]) => ({
+    color: color as CardColor,
+    number,
+  }));
 };
 
 export const fallbackMove = (currentGame: ImmutableGameView): MoveQuery => ({
@@ -213,25 +304,22 @@ export const getPossibleOwnCards = (
   }));
 };
 
-export const getChop = (
-  currentGame: ImmutableGameView,
-  targetPlayerIndex: number
-) => {
+export const getChop = (hand: OwnHand) => {
   const chopIndex =
-    currentGame.hands[targetPlayerIndex].length -
-    currentGame.hands[targetPlayerIndex]
+    hand.length -
+    hand
       .slice()
       .reverse()
       .findIndex((card) => !card.colorClued && !card.numberClued) -
     1;
 
-  if (chopIndex === currentGame.hands[targetPlayerIndex].length) {
+  if (chopIndex === hand.length) {
     return undefined;
   }
 
   return {
     index: chopIndex,
-    chop: currentGame.hands[targetPlayerIndex][chopIndex],
+    chop: hand[chopIndex],
   };
 };
 
@@ -241,7 +329,7 @@ export const getSingletonCards = (currentGame: ImmutableGameView) => {
 
   const hashToCount = Object.fromEntries(
     CARD_COLORS.flatMap((color) =>
-      _.range(1, 6).map<[string, number]>((n) => [
+      CARD_NUMBERS.map<[string, number]>((n) => [
         hashCard2(color, n as CardNumber),
         0,
       ])
@@ -308,11 +396,58 @@ export const getPossibleClues = (
     targetPlayerIndex,
     interaction: { color },
   })).concat(
-    _.range(1, 6).map((number) => ({
+    CARD_NUMBERS.map((number) => ({
       targetPlayerIndex,
       interaction: { number: number as CardNumber },
     }))
   );
 
   return allClues.filter((clue) => getTouchedIndices(hand, clue).length > 0);
+};
+
+export const getFocus = (
+  hand: OwnHand,
+  clue: MoveQuery["interaction"]
+): { index: number; isChop: boolean; wasUntouched: boolean } => {
+  const chopFocus = (() => {
+    const chop = getChop(hand);
+
+    if (!chop) return undefined;
+
+    if (
+      ("color" in clue && chop.chop.color === clue.color) ||
+      ("number" in clue && chop.chop.number === clue.number)
+    ) {
+      return chop.index;
+    }
+
+    return undefined;
+  })();
+
+  if (chopFocus !== undefined) {
+    return { index: chopFocus, isChop: true, wasUntouched: true };
+  }
+
+  const mostRecentUntouched = hand.findIndex(
+    (card) =>
+      !card.isClued() &&
+      (("color" in clue && card.color === clue.color) ||
+        ("number" in clue && card.number === clue.number))
+  );
+
+  if (mostRecentUntouched !== -1) {
+    return { index: mostRecentUntouched, isChop: false, wasUntouched: true };
+  }
+
+  const mostRecent = hand.findIndex(
+    (card) =>
+      ("color" in clue && card.color === clue.color) ||
+      ("number" in clue && card.number === clue.number)
+  );
+
+  return {
+    index: mostRecent === -1 ? 0 : mostRecent,
+    isChop: false,
+    wasUntouched: false,
+  };
 };

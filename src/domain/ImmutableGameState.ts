@@ -3,6 +3,7 @@ import ImmutableCard, {
   CardColor,
   CardNumber,
   CARD_COLORS,
+  CARD_NUMBERS,
 } from "./ImmutableCard";
 import ImmutableCardView from "./ImmutableCardView";
 import ImmutableGameView from "./ImmutableGameView";
@@ -168,7 +169,7 @@ export default class ImmutableGameState {
     const colorToNumberToExists = Object.fromEntries(
       CARD_COLORS.map((color) => [
         color,
-        Object.fromEntries(_.range(1, 6).map((number) => [number, false])),
+        Object.fromEntries(CARD_NUMBERS.map((number) => [number, false])),
       ])
     );
 

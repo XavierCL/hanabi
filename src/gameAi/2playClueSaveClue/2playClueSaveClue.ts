@@ -1,26 +1,22 @@
 import _ from "lodash";
-import ImmutableCard, {
-  CardColor,
-  CardNumber,
-  CARD_COLORS,
-} from "../domain/ImmutableCard";
-import ImmutableCardView from "../domain/ImmutableCardView";
-import { MoveQuery } from "../domain/ImmutableGameState";
-import ImmutableGameView from "../domain/ImmutableGameView";
+import { CardColor, CardNumber } from "../../domain/ImmutableCard";
+import ImmutableCardView from "../../domain/ImmutableCardView";
+import { MoveQuery } from "../../domain/ImmutableGameState";
+import ImmutableGameView, { OthersHand } from "../../domain/ImmutableGameView";
 import {
   fallbackMove,
-  getChop,
   getCardUsefulness,
+  getChop,
+  getFocus,
+  getOrderedOtherPlayerIndices,
   getPlayableCards,
+  getPossibleClues,
   getPossibleOwnCards,
-  PossibleCards,
   getSingletonCards,
   hashCard,
-  getOrderedOtherPlayerIndices,
-  getOrderedOtherHands,
-  getPossibleClues,
-  getTouchedIndices,
-} from "./aiUtils";
+  PossibleCards,
+} from "../aiUtils";
+import getTempoClue from "./tempoMove";
 
 /*
 Ideas:
@@ -79,7 +75,7 @@ export default class GameAi {
 
     const cluedPlayerIndex = currentGame.leadingMove.targetPlayerIndex;
 
-    const chopInfo = getChop(inductionStart, cluedPlayerIndex);
+    const chopInfo = getChop(inductionStart.hands[cluedPlayerIndex]);
 
     // Based on the targetted point of view of course
     const targetPovGame = currentGame.asView(cluedPlayerIndex);
@@ -310,72 +306,19 @@ const getPlayClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
     getPlayableCards(currentGame, true).map(hashCard)
   );
 
-  const isGoodPlayClue = (
-    clue: { color: CardColor } | { number: CardNumber },
-    targetPlayerIndex: number,
-    chopIndex: number | undefined
-  ) => {
-    const hand = currentGame.hands[targetPlayerIndex];
-
-    const isConsideredASaveClue = (() => {
-      if (chopIndex === undefined) return false;
-
-      const chop = hand[chopIndex];
-
-      if (
-        (!("color" in clue) || chop.color !== clue.color) &&
-        (!("number" in clue) || chop.number !== clue.number)
-      ) {
-        return false;
-      }
-
-      // todo play current game before getting possibles
-
-      const possibleChops = getPossibleOwnCards(
-        currentGame.asView(targetPlayerIndex),
-        targetPlayerIndex
-      )[chopIndex].possibles;
-
-      const dangerousCards = new Set(
-        getSingletonCards(currentGame).map(hashCard)
-      );
-
-      return possibleChops.some((possibleChop) =>
-        dangerousCards.has(hashCard(possibleChop))
-      );
-    })();
-
-    if (isConsideredASaveClue) return false;
-
-    const firstTouched = hand.find(
-      (card): card is ImmutableCardView<CardColor, CardNumber> =>
-        !card.isClued() &&
-        (("color" in clue && clue.color === card.color) ||
-          ("number" in clue && clue.number === card.number))
-    );
-
-    // todo if other touched are duplicated, this is a bad move
-
-    if (!firstTouched) return false;
-
-    return playableHashes.has(hashCard(firstTouched));
+  const isGoodPlayClue = (clue: MoveQuery, targetPlayerIndex: number) => {
+    const hand = currentGame.hands[targetPlayerIndex] as OthersHand;
+    const focusCard = hand[getFocus(hand, clue.interaction).index];
+    return playableHashes.has(hashCard(focusCard));
   };
 
   const getPlayClues = () =>
     currentGame.hands.flatMap((hand, playerIndex) => {
       if (playerIndex === currentGame.currentTurnPlayerIndex) return [];
 
-      const possibleClues = CARD_COLORS.map<
-        { color: CardColor } | { number: CardNumber }
-      >((color) => ({ color })).concat(
-        _.range(1, 6).map((number) => ({ number: number as CardNumber }))
-      );
+      const possibleClues = getPossibleClues(playerIndex, hand as OthersHand);
 
-      const chopInfo = getChop(currentGame, playerIndex);
-
-      return possibleClues
-        .filter((clue) => isGoodPlayClue(clue, playerIndex, chopInfo?.index))
-        .map((clue) => ({ interaction: clue, targetPlayerIndex: playerIndex }));
+      return possibleClues.filter((clue) => isGoodPlayClue(clue, playerIndex));
     });
 
   const playClues = getPlayClues();
@@ -395,11 +338,8 @@ const getSaveClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
     getSingletonCards(currentGame).map(hashCard)
   );
 
-  let checkingPlayerIndex =
-    (currentGame.currentTurnPlayerIndex + 1) % currentGame.hands.length;
-
   const getSaveClueForPlayer = (playerIndex: number) => {
-    const chop = getChop(currentGame, playerIndex);
+    const chop = getChop(currentGame.hands[playerIndex]);
 
     if (!chop) return undefined;
 
@@ -427,149 +367,6 @@ const getSaveClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
   return getOrderedOtherPlayerIndices(currentGame)
     .map((playerIndex) => getSaveClueForPlayer(playerIndex))
     .find((clue) => clue);
-};
-
-const getTempoClue = (
-  currentGame: ImmutableGameView
-): MoveQuery | undefined => {
-  const playableCards = new Set(getPlayableCards(currentGame).map(hashCard));
-  const otherHands: readonly {
-    playerIndex: number;
-    cards: readonly ImmutableCardView<CardColor, CardNumber>[];
-  }[] = getOrderedOtherHands(currentGame);
-  const handsPossibleClues: readonly (readonly MoveQuery[])[] = otherHands.map(
-    (hand) => getPossibleClues(hand.playerIndex, hand.cards)
-  );
-  const { uselessCards } = getCardUsefulness(currentGame);
-  const uselessCardSet = new Set(uselessCards.map(hashCard));
-
-  const resolveSemiKnownClues = handsPossibleClues.map(
-    (possibleClues, handIndex) =>
-      possibleClues.filter((possibleClue) => {
-        const previouslyUntouchedIndices = new Set(
-          otherHands[handIndex].cards
-            .map((card, cardIndex) => ({
-              isUntouched: !card.isClued(),
-              cardIndex,
-            }))
-            .filter(({ isUntouched }) => isUntouched)
-            .map(({ cardIndex }) => cardIndex)
-        );
-
-        const touchedIndices: readonly number[] = getTouchedIndices(
-          otherHands[handIndex].cards,
-          possibleClue
-        );
-
-        return !touchedIndices.some((touchedIndex) =>
-          previouslyUntouchedIndices.has(touchedIndex)
-        );
-      })
-  );
-
-  const getTempoSemiKnownPlayClue = () => {
-    const foundClues = resolveSemiKnownClues
-      .map((possibleClues, handIndex) =>
-        possibleClues.filter((possibleClue) => {
-          const touchedIndices: readonly number[] = getTouchedIndices(
-            otherHands[handIndex].cards,
-            possibleClue
-          );
-
-          return touchedIndices.some(
-            (touchedIndex) =>
-              playableCards.has(
-                hashCard(otherHands[handIndex].cards[touchedIndex])
-              ) &&
-              otherHands[handIndex].cards[touchedIndex].addsInformation(
-                possibleClue
-              )
-          );
-        })
-      )
-      .find((semiKnownPlayClues) => semiKnownPlayClues.length > 0);
-
-    if (!foundClues) return undefined;
-
-    return _.shuffle(foundClues)[0];
-  };
-
-  const getTempoSemiKnownTrash = () => {
-    const foundClues = resolveSemiKnownClues
-      .map((possibleClues, handIndex) =>
-        possibleClues.filter((possibleClue) => {
-          const touchedIndices: readonly number[] = getTouchedIndices(
-            otherHands[handIndex].cards,
-            possibleClue
-          );
-
-          return touchedIndices.some(
-            (touchedIndex) =>
-              uselessCardSet.has(
-                hashCard(otherHands[handIndex].cards[touchedIndex])
-              ) &&
-              otherHands[handIndex].cards[touchedIndex].addsInformation(
-                possibleClue
-              )
-          );
-        })
-      )
-      .find((semiKnownPlayClues) => semiKnownPlayClues.length > 0);
-
-    if (!foundClues) return undefined;
-
-    return _.shuffle(foundClues)[0];
-  };
-
-  const getTempoSemiKnownUseful = () => {
-    const foundClues = resolveSemiKnownClues
-      .map((possibleClues, handIndex) =>
-        possibleClues.filter((possibleClue) => {
-          const touchedIndices: readonly number[] = getTouchedIndices(
-            otherHands[handIndex].cards,
-            possibleClue
-          );
-
-          return touchedIndices.some((touchedIndex) =>
-            otherHands[handIndex].cards[touchedIndex].addsInformation(
-              possibleClue
-            )
-          );
-        })
-      )
-      .find((semiKnownPlayClues) => semiKnownPlayClues.length > 0);
-
-    if (!foundClues) return undefined;
-
-    return _.shuffle(foundClues)[0];
-  };
-
-  const tempoPlayClue = getTempoSemiKnownPlayClue();
-  if (tempoPlayClue) {
-    return tempoPlayClue;
-  }
-
-  const tempoSemiKnownTrash = getTempoSemiKnownTrash();
-  if (tempoSemiKnownTrash) {
-    return tempoSemiKnownTrash;
-  }
-
-  const tempoSemiKnownUseful = getTempoSemiKnownUseful();
-  if (tempoSemiKnownUseful) {
-    return tempoSemiKnownUseful;
-  }
-
-  const tempoUnknownTrash = getTempoUnknownTrash(currentGame);
-  if (tempoUnknownTrash) {
-    return tempoUnknownTrash;
-  }
-
-  const tempoKnownOnly = getTempoKnownOnly(currentGame);
-  if (tempoKnownOnly) {
-    return tempoKnownOnly;
-  }
-
-  return undefined;
 };
 
 const getOwnKnownUselessCard = (

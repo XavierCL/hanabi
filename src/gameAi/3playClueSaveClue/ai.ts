@@ -1,30 +1,30 @@
 import _ from "lodash";
+import { CardColor, CardNumber } from "../../domain/ImmutableCard";
+import ImmutableCardView from "../../domain/ImmutableCardView";
+import { MoveQuery } from "../../domain/ImmutableGameState";
+import ImmutableGameView, { OthersHand } from "../../domain/ImmutableGameView";
 import {
-  CardColor,
-  CardNumber,
-  CARD_COLORS,
-  CARD_NUMBERS,
-} from "../domain/ImmutableCard";
-import ImmutableCardView from "../domain/ImmutableCardView";
-import { MoveQuery } from "../domain/ImmutableGameState";
-import ImmutableGameView from "../domain/ImmutableGameView";
-import {
+  ClueIntent,
   fallbackMove,
-  getChop,
   getCardUsefulness,
+  getChop,
+  getFocus,
+  getLayeredPlayableCards,
+  getOrderedOtherPlayerIndices,
   getPlayableCards,
+  getPossibleClues,
   getPossibleOwnCards,
-  PossibleCards,
   getSingletonCards,
   hashCard,
-} from "./aiUtils";
+  PossibleCards,
+} from "../aiUtils";
+import getTempoClue from "./tempoMove";
 
 /*
 Ideas:
 0.5 Check all cards to save, prioritize play clue on their hand, then save on their hand, then any play clue
 1. No duplication rule
 5. 5 saves with number only
-5.5. Default move other than play finess
 4. Chop move 5
 3. finess
 2. Fix clues and acceptable duplication
@@ -37,10 +37,7 @@ Ideas:
 8. End game management
 */
 
-type ClueIntent = {
-  intent: "play" | "save";
-  possibles: readonly ImmutableCardView<CardColor, CardNumber>[];
-};
+// Addition of layered play clues
 
 export default class GameAi {
   private readonly clueIntent: Readonly<Record<string, ClueIntent>>;
@@ -74,94 +71,90 @@ export default class GameAi {
 
     const cluedPlayerIndex = currentGame.leadingMove.targetPlayerIndex;
 
-    const chopInfo = getChop(inductionStart.hands[cluedPlayerIndex]);
-
     // Based on the targetted point of view of course
-    const targetPovGame = currentGame.asView(cluedPlayerIndex);
+    const oldTargetPovGame = inductionStart.asView(cluedPlayerIndex);
+    const oldTargetPovHand = oldTargetPovGame.hands[cluedPlayerIndex];
+    const newTargetPovGame = currentGame.asView(cluedPlayerIndex);
 
     // todo account for no duplicate convention
-    const possibleCards = getPossibleOwnCards(targetPovGame, cluedPlayerIndex);
+    const possibleCards = getPossibleOwnCards(
+      newTargetPovGame,
+      cluedPlayerIndex
+    );
 
-    // if there's a chop, does it touch it?
-    if (chopInfo) {
-      const chopCard = currentGame.hands[cluedPlayerIndex][chopInfo.index];
-      const inductionChopCard =
-        inductionStart.hands[cluedPlayerIndex][chopInfo.index];
+    const {
+      index: focusIndex,
+      isChop: isChopFocus,
+      wasUntouched: focusWasUntouched,
+    } = getFocus(oldTargetPovHand, leadingClue);
 
-      const clueTouchesChop =
-        !inductionChopCard.isClued() && chopCard.isClued();
+    const maybePlayableCards = new Set(
+      getLayeredPlayableCards(oldTargetPovGame, this.clueIntent, false).map(
+        hashCard
+      )
+    );
 
-      if (clueTouchesChop) {
-        // Clue touches chop, is this a dangerous card?
+    const focusPossibleCards = possibleCards[focusIndex].possibles;
 
-        const possibleChopCards = possibleCards[chopInfo.index].possibles;
-        const dangerousCards = new Set(
-          getSingletonCards(targetPovGame).map(hashCard)
-        );
+    const possiblePlayableCards = focusPossibleCards.filter((possible) =>
+      maybePlayableCards.has(hashCard(possible))
+    );
 
-        const possibleDangerousCards = possibleChopCards.filter(
-          (possibleCard) => dangerousCards.has(hashCard(possibleCard))
-        );
+    // Clue touches chop, is this a dangerous card?
+    if (isChopFocus) {
+      const dangerousCards = new Set(
+        getSingletonCards(newTargetPovGame).map(hashCard)
+      );
 
-        const playableCards = new Set(
-          getPlayableCards(targetPovGame).map(hashCard)
-        );
+      const possibleDangerousCards = focusPossibleCards.filter((possibleCard) =>
+        dangerousCards.has(hashCard(possibleCard))
+      );
 
-        const possibleDangerousNonPlayableCards = possibleDangerousCards.filter(
-          (card) => !playableCards.has(hashCard(card))
-        );
+      const certainPlayableCards = new Set(
+        getLayeredPlayableCards(oldTargetPovGame, this.clueIntent, true).map(
+          hashCard
+        )
+      );
 
-        const possiblePlayableCards = possibleChopCards.filter((possible) =>
-          playableCards.has(hashCard(possible))
-        );
+      const possibleDangerousNonPlayableCards = possibleDangerousCards.filter(
+        (card) => !certainPlayableCards.has(hashCard(card))
+      );
 
-        if (possibleDangerousNonPlayableCards.length) {
-          // Clue touches chop and some possible are dangerous and non playable. Safe clue
+      if (possibleDangerousNonPlayableCards.length) {
+        // Clue touches chop and some possible are dangerous and non playable. Safe clue
 
-          return new GameAi({
-            ...this.clueIntent,
-            [chopInfo.chop.cardId]: {
-              intent: "save",
-              possibles: possibleDangerousNonPlayableCards.concat(
-                possiblePlayableCards
-              ),
-            },
-          });
-        }
-
-        // Clue touches chop but no possible are dangerous and non playable. Play clue on chop.
         return new GameAi({
           ...this.clueIntent,
-          [chopInfo.chop.cardId]: {
-            intent: "play",
-            possibles: possiblePlayableCards,
+          [oldTargetPovHand[focusIndex].cardId]: {
+            intent: "save",
+            possibles: possibleDangerousNonPlayableCards.concat(
+              possiblePlayableCards
+            ),
           },
         });
       }
-    }
 
-    // Clue does not touch chop, play clue on most recent
-    const mostRecentTouched = _.zip(
-      inductionStart.hands[cluedPlayerIndex],
-      currentGame.hands[cluedPlayerIndex]
-    ).findIndex(
-      ([inductionCard, currentCard]) =>
-        !inductionCard?.isClued() && currentCard?.isClued()
-    );
-
-    if (mostRecentTouched !== -1) {
+      // Clue touches chop but no possible are dangerous and non playable. Play clue on chop.
       return new GameAi({
         ...this.clueIntent,
-        [currentGame.hands[cluedPlayerIndex][mostRecentTouched].cardId]: {
+        [oldTargetPovHand[focusIndex].cardId]: {
           intent: "play",
-          possibles: possibleCards[mostRecentTouched].possibles,
+          possibles: possiblePlayableCards,
+        },
+      });
+    }
+
+    if (focusWasUntouched) {
+      return new GameAi({
+        ...this.clueIntent,
+        [currentGame.hands[cluedPlayerIndex][focusIndex].cardId]: {
+          intent: "play",
+          possibles: possiblePlayableCards,
         },
       });
     }
 
     return this;
-
-    // todo refactor this function
   }
 
   playOwnTurn(gameHistory: readonly ImmutableGameView[]): MoveQuery {
@@ -187,7 +180,7 @@ export default class GameAi {
     }
 
     if (currentGame.canGiveClue()) {
-      const bestPlayClue = getPlayClue(currentGame);
+      const bestPlayClue = getPlayClue(currentGame, this.clueIntent);
       if (bestPlayClue) {
         return bestPlayClue;
       }
@@ -215,6 +208,13 @@ export default class GameAi {
       }
     }
 
+    if (currentGame.canGiveClue()) {
+      const bestTempoClue = getTempoClue(currentGame);
+      if (bestTempoClue) {
+        return bestTempoClue;
+      }
+    }
+
     if (currentGame.canDiscard()) {
       return {
         targetPlayerIndex: currentGame.currentTurnPlayerIndex,
@@ -222,13 +222,6 @@ export default class GameAi {
           discard: ownCards[ownCards.length - 1].cardId,
         },
       };
-    }
-
-    if (currentGame.canGiveClue()) {
-      const bestSaveClue = getSaveClue(currentGame, true);
-      if (bestSaveClue) {
-        return bestSaveClue;
-      }
     }
 
     return fallbackMove(currentGame);
@@ -279,14 +272,20 @@ const playIntentOwnPlayableCard = (
 
   const playableOwnCard = currentGame.hands[
     currentGame.currentTurnPlayerIndex
-  ].find(
-    (card, cardIndex) =>
+  ].find((card, cardIndex) => {
+    const possibleHashes = new Set(ownCards[cardIndex].possibles.map(hashCard));
+
+    return (
       card.cardId in clueIntents &&
       clueIntents[card.cardId].intent === "play" &&
-      ownCards[cardIndex].possibles.some((possibleCard) =>
-        playableHashes.has(hashCard(possibleCard))
+      // todo every instead of some, and update intent possible with other intent possible in observer
+      clueIntents[card.cardId].possibles.some(
+        (card) =>
+          possibleHashes.has(hashCard(card)) &&
+          playableHashes.has(hashCard(card))
       )
-  );
+    );
+  });
 
   if (playableOwnCard) {
     return {
@@ -300,77 +299,27 @@ const playIntentOwnPlayableCard = (
   return undefined;
 };
 
-const getPlayClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
+const getPlayClue = (
+  currentGame: ImmutableGameView,
+  clueIntent: Readonly<Record<string, ClueIntent>>
+): MoveQuery | undefined => {
   const playableHashes = new Set(
-    getPlayableCards(currentGame, true).map(hashCard)
+    getLayeredPlayableCards(currentGame, clueIntent, true).map(hashCard)
   );
 
-  const isGoodPlayClue = (
-    clue: { color: CardColor } | { number: CardNumber },
-    targetPlayerIndex: number,
-    chopIndex: number | undefined
-  ) => {
-    const hand = currentGame.hands[targetPlayerIndex];
-
-    const isConsideredASaveClue = (() => {
-      if (chopIndex === undefined) return false;
-
-      const chop = hand[chopIndex];
-
-      if (
-        (!("color" in clue) || chop.color !== clue.color) &&
-        (!("number" in clue) || chop.number !== clue.number)
-      ) {
-        return false;
-      }
-
-      // todo play current game before getting possibles
-
-      const possibleChops = getPossibleOwnCards(
-        currentGame.asView(targetPlayerIndex),
-        targetPlayerIndex
-      )[chopIndex].possibles;
-
-      const dangerousCards = new Set(
-        getSingletonCards(currentGame).map(hashCard)
-      );
-
-      return possibleChops.some((possibleChop) =>
-        dangerousCards.has(hashCard(possibleChop))
-      );
-    })();
-
-    if (isConsideredASaveClue) return false;
-
-    const firstTouched = hand.find(
-      (card): card is ImmutableCardView<CardColor, CardNumber> =>
-        !card.isClued() &&
-        (("color" in clue && clue.color === card.color) ||
-          ("number" in clue && clue.number === card.number))
-    );
-
-    // todo if other touched are duplicated, this is a bad move
-
-    if (!firstTouched) return false;
-
-    return playableHashes.has(hashCard(firstTouched));
+  const isGoodPlayClue = (clue: MoveQuery, targetPlayerIndex: number) => {
+    const hand = currentGame.hands[targetPlayerIndex] as OthersHand;
+    const focusCard = hand[getFocus(hand, clue.interaction).index];
+    return playableHashes.has(hashCard(focusCard));
   };
 
   const getPlayClues = () =>
     currentGame.hands.flatMap((hand, playerIndex) => {
       if (playerIndex === currentGame.currentTurnPlayerIndex) return [];
 
-      const possibleClues = CARD_COLORS.map<
-        { color: CardColor } | { number: CardNumber }
-      >((color) => ({ color })).concat(
-        CARD_NUMBERS.map((number) => ({ number: number as CardNumber }))
-      );
+      const possibleClues = getPossibleClues(playerIndex, hand as OthersHand);
 
-      const chopInfo = getChop(currentGame.hands[playerIndex]);
-
-      return possibleClues
-        .filter((clue) => isGoodPlayClue(clue, playerIndex, chopInfo?.index))
-        .map((clue) => ({ interaction: clue, targetPlayerIndex: playerIndex }));
+      return possibleClues.filter((clue) => isGoodPlayClue(clue, playerIndex));
     });
 
   const playClues = getPlayClues();
@@ -385,17 +334,10 @@ const getPlayClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
   return undefined;
 };
 
-const getSaveClue = (
-  currentGame: ImmutableGameView,
-  _desperate: boolean = false
-): MoveQuery | undefined => {
-  // todo desperate
+const getSaveClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
   const dangerousCardHashes = new Set(
     getSingletonCards(currentGame).map(hashCard)
   );
-
-  let checkingPlayerIndex =
-    (currentGame.currentTurnPlayerIndex + 1) % currentGame.hands.length;
 
   const getSaveClueForPlayer = (playerIndex: number) => {
     const chop = getChop(currentGame.hands[playerIndex]);
@@ -423,15 +365,9 @@ const getSaveClue = (
     ])[0];
   };
 
-  while (checkingPlayerIndex !== currentGame.currentTurnPlayerIndex) {
-    const saveClue = getSaveClueForPlayer(checkingPlayerIndex);
-
-    if (saveClue) return saveClue;
-
-    checkingPlayerIndex = (checkingPlayerIndex + 1) % currentGame.hands.length;
-  }
-
-  return undefined;
+  return getOrderedOtherPlayerIndices(currentGame)
+    .map((playerIndex) => getSaveClueForPlayer(playerIndex))
+    .find((clue) => clue);
 };
 
 const getOwnKnownUselessCard = (
