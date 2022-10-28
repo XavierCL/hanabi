@@ -1,4 +1,4 @@
-import _ from "lodash";
+import _, { zip } from "lodash";
 import {
   CardColor,
   CardNumber,
@@ -6,7 +6,7 @@ import {
   CARD_NUMBERS,
 } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
-import { MoveQuery } from "../domain/ImmutableGameState";
+import { MoveQuery, PlayQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView, {
   OthersHand,
   OwnHand,
@@ -391,8 +391,8 @@ export const getTouchedIndices = (
 export const getPossibleClues = (
   targetPlayerIndex: number,
   hand: OthersHand
-): readonly MoveQuery[] => {
-  const allClues = CARD_COLORS.map<MoveQuery>((color) => ({
+): readonly PlayQuery[] => {
+  const allClues = CARD_COLORS.map<PlayQuery>((color) => ({
     targetPlayerIndex,
     interaction: { color },
   })).concat(
@@ -406,40 +406,32 @@ export const getPossibleClues = (
 };
 
 export const getFocus = (
-  hand: OwnHand,
+  oldHand: OwnHand,
+  newHand: OwnHand,
   clue: MoveQuery["interaction"]
 ): { index: number; isChop: boolean; wasUntouched: boolean } => {
   const chopFocus = (() => {
-    const chop = getChop(hand);
+    const oldChop = getChop(oldHand);
 
-    if (!chop) return undefined;
+    if (!oldChop) return undefined;
 
-    if (
-      ("color" in clue && chop.chop.color === clue.color) ||
-      ("number" in clue && chop.chop.number === clue.number)
-    ) {
-      return chop.index;
-    }
-
-    return undefined;
+    return newHand[oldChop.index].isClued() ? oldChop.index : undefined;
   })();
 
   if (chopFocus !== undefined) {
     return { index: chopFocus, isChop: true, wasUntouched: true };
   }
 
-  const mostRecentUntouched = hand.findIndex(
-    (card) =>
-      !card.isClued() &&
-      (("color" in clue && card.color === clue.color) ||
-        ("number" in clue && card.number === clue.number))
+  const mostRecentUntouched = zip(oldHand, newHand).findIndex(
+    ([oldCard, newCard]) =>
+      oldCard && newCard && !oldCard.isClued() && newCard.isClued()
   );
 
   if (mostRecentUntouched !== -1) {
     return { index: mostRecentUntouched, isChop: false, wasUntouched: true };
   }
 
-  const mostRecent = hand.findIndex(
+  const mostRecent = newHand.findIndex(
     (card) =>
       ("color" in clue && card.color === clue.color) ||
       ("number" in clue && card.number === clue.number)

@@ -71,4 +71,23 @@ export default class ImmutableCardView<
         !this.numberClued)
     );
   }
+
+  receiveClue(
+    clue: { color: CardColor } | { number: CardNumber }
+  ): ImmutableCardView<Color, Digit> {
+    const receivedColorClue =
+      "color" in clue && this.color && clue.color === this.color;
+    const receivedNumberClue =
+      "number" in clue && this.number && clue.number === this.number;
+
+    return new ImmutableCardView(
+      this.cardId,
+      { color: this.color, number: this.number },
+      {
+        ...this.clues,
+        ...(receivedColorClue && { color: true }),
+        ...(receivedNumberClue && { number: true }),
+      }
+    );
+  }
 }

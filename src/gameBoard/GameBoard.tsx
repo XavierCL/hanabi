@@ -72,7 +72,14 @@ const GameBoard = ({
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "row", gap: "30px" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        gap: "30px",
+        minWidth: "1300px",
+      }}
+    >
       <MoveList
         moves={gameHistory.history
           .map((gameState) => gameState.leadingMove)

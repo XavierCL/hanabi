@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { CardColor, CardNumber } from "../../domain/ImmutableCard";
 import ImmutableCardView from "../../domain/ImmutableCardView";
-import { MoveQuery } from "../../domain/ImmutableGameState";
+import { MoveQuery, PlayQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView, { OthersHand } from "../../domain/ImmutableGameView";
 import {
   fallbackMove,
@@ -306,19 +306,20 @@ const getPlayClue = (currentGame: ImmutableGameView): MoveQuery | undefined => {
     getPlayableCards(currentGame, true).map(hashCard)
   );
 
-  const isGoodPlayClue = (clue: MoveQuery, targetPlayerIndex: number) => {
-    const hand = currentGame.hands[targetPlayerIndex] as OthersHand;
-    const focusCard = hand[getFocus(hand, clue.interaction).index];
+  const isGoodPlayClue = (clue: PlayQuery, hand: OthersHand) => {
+    const cluedHand = hand.map((card) => card.receiveClue(clue.interaction));
+    const focusCard = hand[getFocus(hand, cluedHand, clue.interaction).index];
     return playableHashes.has(hashCard(focusCard));
   };
 
   const getPlayClues = () =>
     currentGame.hands.flatMap((hand, playerIndex) => {
       if (playerIndex === currentGame.currentTurnPlayerIndex) return [];
+      const othersHand = hand as OthersHand;
 
       const possibleClues = getPossibleClues(playerIndex, hand as OthersHand);
 
-      return possibleClues.filter((clue) => isGoodPlayClue(clue, playerIndex));
+      return possibleClues.filter((clue) => isGoodPlayClue(clue, othersHand));
     });
 
   const playClues = getPlayClues();

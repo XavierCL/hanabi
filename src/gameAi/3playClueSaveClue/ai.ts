@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { CardColor, CardNumber } from "../../domain/ImmutableCard";
 import ImmutableCardView from "../../domain/ImmutableCardView";
-import { MoveQuery } from "../../domain/ImmutableGameState";
+import { MoveQuery, PlayQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView, { OthersHand } from "../../domain/ImmutableGameView";
 import {
   ClueIntent,
@@ -57,11 +57,11 @@ export default class GameAi {
 
     const leadingClue = (() => {
       if ("color" in leadingMoveInteraction) {
-        return { color: leadingMoveInteraction.color, number: undefined };
+        return { color: leadingMoveInteraction.color };
       }
 
       if ("number" in leadingMoveInteraction) {
-        return { number: leadingMoveInteraction.number, color: undefined };
+        return { number: leadingMoveInteraction.number };
       }
 
       return undefined;
@@ -75,6 +75,7 @@ export default class GameAi {
     const oldTargetPovGame = inductionStart.asView(cluedPlayerIndex);
     const oldTargetPovHand = oldTargetPovGame.hands[cluedPlayerIndex];
     const newTargetPovGame = currentGame.asView(cluedPlayerIndex);
+    const newTargetPovHand = newTargetPovGame.hands[cluedPlayerIndex];
 
     // todo account for no duplicate convention
     const possibleCards = getPossibleOwnCards(
@@ -86,7 +87,7 @@ export default class GameAi {
       index: focusIndex,
       isChop: isChopFocus,
       wasUntouched: focusWasUntouched,
-    } = getFocus(oldTargetPovHand, leadingClue);
+    } = getFocus(oldTargetPovHand, newTargetPovHand, leadingClue);
 
     const maybePlayableCards = new Set(
       getLayeredPlayableCards(oldTargetPovGame, this.clueIntent, false).map(
@@ -234,7 +235,7 @@ const playSureOwnPlayableCard = (
 ): MoveQuery | undefined => {
   const allPlayableCards = getPlayableCards(currentGame);
 
-  const playableOwnCard = ownCards.find(({ card, possibles }) => {
+  const playableOwnCard = ownCards.find(({ possibles }) => {
     if (
       possibles.some((possibleCard) =>
         allPlayableCards.every(
@@ -275,15 +276,20 @@ const playIntentOwnPlayableCard = (
   ].find((card, cardIndex) => {
     const possibleHashes = new Set(ownCards[cardIndex].possibles.map(hashCard));
 
-    return (
-      card.cardId in clueIntents &&
-      clueIntents[card.cardId].intent === "play" &&
-      // todo every instead of some, and update intent possible with other intent possible in observer
-      clueIntents[card.cardId].possibles.some(
-        (card) =>
-          possibleHashes.has(hashCard(card)) &&
-          playableHashes.has(hashCard(card))
-      )
+    if (
+      !(card.cardId in clueIntents) ||
+      clueIntents[card.cardId].intent !== "play"
+    ) {
+      return false;
+    }
+
+    const currentPossibles = clueIntents[card.cardId].possibles.filter(
+      (intentPossible) => possibleHashes.has(hashCard(intentPossible))
+    );
+
+    return currentPossibles.every(
+      (card) =>
+        possibleHashes.has(hashCard(card)) && playableHashes.has(hashCard(card))
     );
   });
 
@@ -302,14 +308,15 @@ const playIntentOwnPlayableCard = (
 const getPlayClue = (
   currentGame: ImmutableGameView,
   clueIntent: Readonly<Record<string, ClueIntent>>
-): MoveQuery | undefined => {
+): PlayQuery | undefined => {
   const playableHashes = new Set(
     getLayeredPlayableCards(currentGame, clueIntent, true).map(hashCard)
   );
 
-  const isGoodPlayClue = (clue: MoveQuery, targetPlayerIndex: number) => {
+  const isGoodPlayClue = (clue: PlayQuery, targetPlayerIndex: number) => {
     const hand = currentGame.hands[targetPlayerIndex] as OthersHand;
-    const focusCard = hand[getFocus(hand, clue.interaction).index];
+    const cluedHand = hand.map((card) => card.receiveClue(clue.interaction));
+    const focusCard = hand[getFocus(hand, cluedHand, clue.interaction).index];
     return playableHashes.has(hashCard(focusCard));
   };
 

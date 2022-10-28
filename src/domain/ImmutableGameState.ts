@@ -22,6 +22,11 @@ export type MoveQuery = {
     | { discard: string };
 };
 
+export type PlayQuery = {
+  targetPlayerIndex: number;
+  interaction: { color: CardColor } | { number: CardNumber };
+};
+
 export type Move = {
   targetPlayerIndex: number;
   interaction:
