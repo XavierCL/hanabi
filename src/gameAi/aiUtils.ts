@@ -6,7 +6,7 @@ import {
   CARD_NUMBERS,
 } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
-import { MoveQuery, PlayQuery } from "../domain/ImmutableGameState";
+import { MoveQuery, ClueQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView, {
   OthersHand,
   OwnHand,
@@ -391,8 +391,8 @@ export const getTouchedIndices = (
 export const getPossibleClues = (
   targetPlayerIndex: number,
   hand: OthersHand
-): readonly PlayQuery[] => {
-  const allClues = CARD_COLORS.map<PlayQuery>((color) => ({
+): readonly ClueQuery[] => {
+  const allClues = CARD_COLORS.map<ClueQuery>((color) => ({
     targetPlayerIndex,
     interaction: { color },
   })).concat(

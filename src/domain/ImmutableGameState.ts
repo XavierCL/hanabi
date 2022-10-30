@@ -6,7 +6,7 @@ import ImmutableCard, {
   CARD_NUMBERS,
 } from "./ImmutableCard";
 import ImmutableCardView from "./ImmutableCardView";
-import ImmutableGameView from "./ImmutableGameView";
+import ImmutableGameView, { MoveView } from "./ImmutableGameView";
 import ImmutableHand from "./ImmutableHand";
 
 export const MAXIMUM_LIVES = 3;
@@ -22,9 +22,14 @@ export type MoveQuery = {
     | { discard: string };
 };
 
-export type PlayQuery = {
+export type ClueQuery = {
   targetPlayerIndex: number;
   interaction: { color: CardColor } | { number: CardNumber };
+};
+
+export type ActionQuery = {
+  targetPlayerIndex: number;
+  interaction: { play: string } | { discard: string };
 };
 
 export type Move = {
@@ -345,6 +350,34 @@ export default class ImmutableGameState {
   }
 
   asView(playerIndex: number): ImmutableGameView {
+    const leadingMoveView = ((): MoveView | undefined => {
+      if (!this.leadingMove) return undefined;
+
+      if (
+        "number" in this.leadingMove.interaction ||
+        "color" in this.leadingMove.interaction
+      ) {
+        return {
+          ...this.leadingMove,
+          interaction: this.leadingMove.interaction,
+        };
+      }
+
+      if ("play" in this.leadingMove.interaction) {
+        return {
+          ...this.leadingMove,
+          interaction: { play: this.leadingMove.interaction.play.asOthers() },
+        };
+      }
+
+      return {
+        ...this.leadingMove,
+        interaction: {
+          discard: this.leadingMove.interaction.discard.asOthers(),
+        },
+      };
+    })();
+
     return new ImmutableGameView(
       this.remainingClues,
       this.hands.map((hand, handIndex) =>
@@ -354,7 +387,7 @@ export default class ImmutableGameState {
       this.playedCards,
       this.fullDeckView,
       this.discarded.map((card) => card.asOthers()),
-      this.leadingMove
+      leadingMoveView
     );
   }
 }

@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { CardColor, CardNumber } from "../../domain/ImmutableCard";
 import ImmutableCardView from "../../domain/ImmutableCardView";
-import { MoveQuery, PlayQuery } from "../../domain/ImmutableGameState";
+import { MoveQuery, ClueQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView, { OthersHand } from "../../domain/ImmutableGameView";
 import {
   ClueIntent,
@@ -308,12 +308,12 @@ const playIntentOwnPlayableCard = (
 const getPlayClue = (
   currentGame: ImmutableGameView,
   clueIntent: Readonly<Record<string, ClueIntent>>
-): PlayQuery | undefined => {
+): ClueQuery | undefined => {
   const playableHashes = new Set(
     getLayeredPlayableCards(currentGame, clueIntent, true).map(hashCard)
   );
 
-  const isGoodPlayClue = (clue: PlayQuery, targetPlayerIndex: number) => {
+  const isGoodPlayClue = (clue: ClueQuery, targetPlayerIndex: number) => {
     const hand = currentGame.hands[targetPlayerIndex] as OthersHand;
     const cluedHand = hand.map((card) => card.receiveClue(clue.interaction));
     const focusCard = hand[getFocus(hand, cluedHand, clue.interaction).index];
