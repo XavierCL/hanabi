@@ -1,11 +1,29 @@
 import { MoveQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView from "../../domain/ImmutableGameView";
-import { ClueIntent } from "../aiUtils";
+import { SimulationEngine } from "./SimulationEngine";
 
 export default class GameAi {
-  readonly;
+  readonly engine: SimulationEngine | undefined;
 
-  observeOthersTurn(gameHistory: readonly ImmutableGameView[]): GameAi {}
+  constructor(engine?: SimulationEngine) {
+    this.engine = engine;
+  }
 
-  playOwnTurn(gameHistory: readonly ImmutableGameView[]): MoveQuery {}
+  observeOthersTurn(gameHistory: readonly ImmutableGameView[]): GameAi {
+    return new GameAi(
+      this.self(gameHistory).observeOthersTurn(
+        gameHistory[gameHistory.length - 1]
+      )
+    );
+  }
+
+  playOwnTurn(gameHistory: readonly ImmutableGameView[]): MoveQuery {
+    return this.self(gameHistory).playOwnTurn(
+      gameHistory[gameHistory.length - 1]
+    );
+  }
+
+  private self(gameHistory: readonly ImmutableGameView[]) {
+    return this.engine ?? SimulationEngine.from(gameHistory);
+  }
 }

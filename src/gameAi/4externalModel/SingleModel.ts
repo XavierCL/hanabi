@@ -1,3 +1,4 @@
+import { sumBy } from "lodash";
 import ImmutableGameView from "../../domain/ImmutableGameView";
 
 export class SingleModel {
@@ -20,13 +21,17 @@ export class SingleModel {
   public getScore(): {
     maxScore: number;
     remainingLives: number;
-    sequencePlayable: number;
     totalPlayable: number;
   } {
     const currentGame = this.gameHistory[this.gameHistory.length - 1];
 
     return {
-      maxScore: currentGame.ma,
+      maxScore: currentGame.getMaxScore(),
+      remainingLives: currentGame.remainingLives,
+      totalPlayable: sumBy(
+        Object.entries(currentGame.playedCards),
+        ([_, number]) => number
+      ),
     };
   }
 }

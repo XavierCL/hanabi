@@ -3,7 +3,6 @@ import ImmutableCard, {
   CardColor,
   CardNumber,
   CARD_COLORS,
-  CARD_NUMBERS,
 } from "./ImmutableCard";
 import ImmutableCardView from "./ImmutableCardView";
 import ImmutableGameView, { MoveView } from "./ImmutableGameView";
@@ -176,40 +175,7 @@ export default class ImmutableGameState {
   }
 
   getMaxScore(): number {
-    const colorToNumberToExists = Object.fromEntries(
-      CARD_COLORS.map((color) => [
-        color,
-        Object.fromEntries(CARD_NUMBERS.map((number) => [number, false])),
-      ])
-    );
-
-    this.remainingDeck.forEach(
-      (card) =>
-        (colorToNumberToExists[card.asOthers().color][card.asOthers().number] =
-          true)
-    );
-
-    this.hands
-      .flatMap((hand) => hand.asOthers())
-      .forEach(
-        (card) => (colorToNumberToExists[card.color][card.number] = true)
-      );
-
-    Object.entries(this.playedCards).forEach(([color, colorStack]) =>
-      _.range(1, colorStack + 1).forEach(
-        (number) => (colorToNumberToExists[color][number] = true)
-      )
-    );
-
-    return _.sum(
-      CARD_COLORS.map(
-        (color) =>
-          ((_.sortBy(
-            Object.entries(colorToNumberToExists[color]),
-            ([number]) => number
-          ).find(([_, exists]) => !exists)?.[0] as number | undefined) ?? 6) - 1
-      )
-    );
+    return this.asView(0).getMaxScore();
   }
 
   playInteraction(moveQuery: MoveQuery): ImmutableGameState {
@@ -387,6 +353,7 @@ export default class ImmutableGameState {
       this.playedCards,
       this.fullDeckView,
       this.discarded.map((card) => card.asOthers()),
+      this.remainingLives,
       leadingMoveView
     );
   }

@@ -36,7 +36,9 @@ export const getCardUsefulness = (
   );
 
   currentGame.fullDeck.forEach((card) => (hashToCount[hashCard(card)] += 1));
-  currentGame.discarded.forEach((card) => (hashToCount[hashCard(card)] -= 1));
+  currentGame
+    .getKnownDiscard()
+    .forEach((card) => (hashToCount[hashCard(card)] -= 1));
 
   const uselessCards = CARD_COLORS.flatMap((color) => {
     const firstMissing = CARD_NUMBERS.find(
@@ -228,7 +230,7 @@ export const getPossibleOwnCards = (
     );
 
   const allKnownCards = playedCards
-    .concat(currentGame.discarded)
+    .concat(currentGame.getKnownDiscard())
     .concat(othersCards);
 
   const allKnownCardBuilder = allKnownCards;
@@ -337,7 +339,9 @@ export const getSingletonCards = (currentGame: ImmutableGameView) => {
   );
 
   currentGame.fullDeck.forEach((card) => (hashToCount[hashCard(card)] += 1));
-  currentGame.discarded.forEach((card) => (hashToCount[hashCard(card)] -= 1));
+  currentGame
+    .getKnownDiscard()
+    .forEach((card) => (hashToCount[hashCard(card)] -= 1));
 
   return usefulCards.filter((card) => hashToCount[hashCard(card)] === 1);
 };

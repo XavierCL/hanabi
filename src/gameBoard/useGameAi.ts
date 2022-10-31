@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { useCallback, useEffect, useRef } from "react";
 import ImmutableGameState, { MoveQuery } from "../domain/ImmutableGameState";
-import GameAi from "../gameAi/3playClueSaveClue/ai";
+import GameAi from "../gameAi/4externalModel/ai";
 
 const HUMAN_PLAYER_INDEX = 0;
 

@@ -1,5 +1,10 @@
 import _, { isEqual } from "lodash";
-import { CardColor, CardNumber, CARD_COLORS } from "./ImmutableCard";
+import {
+  CardColor,
+  CardNumber,
+  CARD_COLORS,
+  CARD_NUMBERS,
+} from "./ImmutableCard";
 import ImmutableCardView from "./ImmutableCardView";
 import { MoveQuery, RemainingClues } from "./ImmutableGameState";
 
@@ -15,12 +20,9 @@ export type MoveView = {
   interaction:
     | { color: CardColor }
     | { number: CardNumber }
-    | { play: ImmutableCardView<CardColor | undefined, CardNumber | undefined> }
+    | { play: ImmutableCardView<CardColor, CardNumber> }
     | {
-        discard: ImmutableCardView<
-          CardColor | undefined,
-          CardNumber | undefined
-        >;
+        discard: ImmutableCardView<CardColor, CardNumber>;
       };
 };
 
@@ -37,6 +39,7 @@ export default class ImmutableGameView {
     CardColor | undefined,
     CardNumber | undefined
   >[];
+  readonly remainingLives: number;
   readonly leadingMove: MoveView | undefined;
 
   constructor(
@@ -52,6 +55,7 @@ export default class ImmutableGameView {
       CardColor | undefined,
       CardNumber | undefined
     >[],
+    remainingLives: number,
     leadingMove: MoveView | undefined
   ) {
     this.remainingClues = remainingClues;
@@ -60,6 +64,7 @@ export default class ImmutableGameView {
     this.playedCards = playedCards;
     this.fullDeck = fullDeck;
     this.discarded = discarded;
+    this.remainingLives = remainingLives;
     this.leadingMove = leadingMove;
   }
 
@@ -111,6 +116,63 @@ export default class ImmutableGameView {
     });
   }
 
+  getMaxScore(): number {
+    const colorToNumberToRemaining = Object.fromEntries(
+      CARD_COLORS.map((color) => [
+        color,
+        Object.fromEntries(CARD_NUMBERS.map((number) => [number, 0])),
+      ])
+    );
+
+    this.fullDeck.forEach((card) => {
+      colorToNumberToRemaining[card.color][card.number] += 1;
+    });
+
+    // Can do better using negative clues and remaining count of same property
+    this.getKnownDiscard().forEach(
+      (card) => (colorToNumberToRemaining[card.color][card.number] -= 1)
+    );
+
+    return _.sum(
+      CARD_COLORS.map(
+        (color) =>
+          ((_.sortBy(
+            Object.entries(colorToNumberToRemaining[color]),
+            ([number]) => number
+          ).find(([_, remaining]) => !Boolean(remaining))?.[0] as
+            | number
+            | undefined) ?? 6) - 1
+      )
+    );
+  }
+
+  asView(playerIndex: number): ImmutableGameView {
+    return new ImmutableGameView(
+      this.remainingClues,
+      this.hands.map((hand, handIndex) =>
+        handIndex === playerIndex
+          ? hand.map((card) => card.asOwn())
+          : hand.map((card) => card.asOthers())
+      ),
+      this.currentTurnPlayerIndex,
+      this.playedCards,
+      this.fullDeck,
+      this.discarded,
+      this.remainingLives,
+      this.leadingMove
+    );
+  }
+
+  public getKnownDiscard(): readonly ImmutableCardView<
+    CardColor,
+    CardNumber
+  >[] {
+    return this.discarded.filter(
+      (card): card is ImmutableCardView<CardColor, CardNumber> =>
+        Boolean(card.color && card.number)
+    );
+  }
+
   playInteraction(moveQuery: MoveQuery): ImmutableGameView {
     if (
       this.getLegalMoves().every((legalMove) => !isEqual(legalMove, moveQuery))
@@ -123,6 +185,7 @@ export default class ImmutableGameView {
     const newPlayed = { ...this.playedCards };
     const discarded = this.discarded.slice();
     let remainingClues = this.remainingClues;
+    let remainingLives = this.remainingLives;
     let interactionCard:
       | ImmutableCardView<CardColor | undefined, CardNumber | undefined>
       | undefined = undefined;
@@ -175,60 +238,16 @@ export default class ImmutableGameView {
       interactionCard = playedCardView;
       const newHand = hand.slice().splice(playedIndex);
 
-      // Play success if card is possibly playable
-      const getSuccessColors = (): CardColor[] => {
-        if (playedCardView.color && playedCardView.number) {
-          if (newPlayed[playedCardView.color] === playedCardView.number - 1) {
-            return [playedCardView.color];
-          }
-
-          return [];
-        }
-
-        if (playedCardView.color) {
-          if (
-            newPlayed[playedCardView.color] !== 5 &&
-            // If received negative clue this is not playable
-            // Clue can't be true and number missing, assuming presence means negative clue
-            !(newPlayed[playedCardView.color] + 1 in playedCardView.clues)
-          ) {
-            return [playedCardView.color];
-          }
-
-          return [];
-        }
-
-        if (playedCardView.number) {
-          const playedCardViewNumber = playedCardView.number;
-          return CARD_COLORS.filter(
-            (color) =>
-              // Clue can't be true and color missing, assuming presence means negative clue.
-              !(color in playedCardView.clues) &&
-              newPlayed[color] === playedCardViewNumber - 1
-          );
-        }
-
-        return CARD_COLORS.filter(
-          (color) =>
-            newPlayed[color] !== 5 &&
-            !(color in playedCardView.clues) &&
-            !(newPlayed[color] + 1 in playedCardView.clues)
-        );
-      };
-
-      const successColors = getSuccessColors();
-
-      if (successColors.length === 0) {
+      if (
+        playedCardView.color &&
+        playedCardView.number &&
+        newPlayed[playedCardView.color] === playedCardView.number - 1
+      ) {
+        if (playedCardView.number === 5) ++remainingClues;
+        ++newPlayed[playedCardView.color];
+      } else {
         discarded.push(playedCardView);
-        return newHand;
-      }
-
-      if (successColors.every((color) => newPlayed[color] === 4)) {
-        ++remainingClues;
-      }
-
-      if (successColors.length === 1) {
-        ++newPlayed[successColors[0]];
+        --remainingLives;
       }
 
       return newHand;
@@ -294,23 +313,8 @@ export default class ImmutableGameView {
       newPlayed,
       this.fullDeck,
       discarded,
+      remainingLives,
       move
-    );
-  }
-
-  asView(playerIndex: number): ImmutableGameView {
-    return new ImmutableGameView(
-      this.remainingClues,
-      this.hands.map((hand, handIndex) =>
-        handIndex === playerIndex
-          ? hand.map((card) => card.asOwn())
-          : hand.map((card) => card.asOthers())
-      ),
-      this.currentTurnPlayerIndex,
-      this.playedCards,
-      this.fullDeck,
-      this.discarded,
-      this.leadingMove
     );
   }
 }
