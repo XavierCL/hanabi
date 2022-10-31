@@ -1,9 +1,8 @@
-import { range, shuffle } from "lodash";
+import { range, shuffle, sum } from "lodash";
 import { MoveQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView from "../../domain/ImmutableGameView";
+import { firstIsBest, Score } from "./scores/score";
 import { SingleModel } from "./SingleModel";
-
-type Estimation = ReturnType<SingleModel["getScore"]> & { move: MoveQuery };
 
 export class SimulationEngine {
   private readonly models: readonly SingleModel[];
@@ -35,75 +34,39 @@ export class SimulationEngine {
     );
   }
 
+  // todo make sure discount initialization works and is only computed from game not from ai
   public playOwnTurn(currentGame: ImmutableGameView): MoveQuery {
     const legalMoves = shuffle(currentGame.getLegalMoves());
-    const result = legalMoves.reduce<Estimation | undefined>(
-      (bestResult, currentMove) => {
-        const estimation = {
-          ...this.models[currentMove.targetPlayerIndex]
-            .observeTurn(
-              currentGame
-                .playInteraction(currentMove)
-                .asView(currentMove.targetPlayerIndex)
-            )
-            .getScore(),
-          move: currentMove,
-        };
+    const result = legalMoves.reduce<
+      (Score & { moveQuery: MoveQuery }) | undefined
+    >((bestResult, currentMove) => {
+      let nextState = currentGame.playInteraction(currentMove);
 
-        if (!bestResult) return estimation;
+      const observers = this.models.map((model) =>
+        model.observeTurn(nextState.asView(currentMove.targetPlayerIndex))
+      );
 
-        return this.firstIsBest(bestResult, estimation, currentGame)
-          ? bestResult
-          : estimation;
-      },
-      undefined
-    );
+      let discountedScore = 0;
+      const cardCount = sum(nextState.hands.map((hand) => hand.length));
+
+      for (const _simulatedTurn of range(cardCount)) {
+        const actionTurn =
+          observers[nextState.currentTurnPlayerIndex].playActionTurn();
+
+        nextState = actionTurn.state;
+        observers[nextState.currentTurnPlayerIndex] = actionTurn.model;
+        discountedScore = discountedScore.add(actionTurn.score);
+      }
+
+      if (!bestResult) return discountedScore;
+
+      return firstIsBest(bestResult, discountedScore, currentGame)
+        ? bestResult
+        : discountedScore;
+    }, undefined);
 
     if (!result) throw new Error("Ai had no legal moves");
 
-    return result.move;
-  }
-
-  private firstIsBest(
-    first: Estimation,
-    second: Estimation,
-    currentGame: ImmutableGameView
-  ): boolean {
-    if (first.remainingLives > second.remainingLives) return true;
-    if (first.remainingLives < second.remainingLives) return false;
-
-    if (first.maxScore > second.maxScore) return true;
-    if (first.maxScore < second.maxScore) return false;
-
-    if (first.totalPlayable > second.totalPlayable) return true;
-    if (first.totalPlayable < second.totalPlayable) return false;
-
-    if (
-      (first.move.targetPlayerIndex +
-        this.models.length -
-        currentGame.currentTurnPlayerIndex) %
-        this.models.length <
-      (second.move.targetPlayerIndex +
-        this.models.length -
-        currentGame.currentTurnPlayerIndex) %
-        this.models.length
-    ) {
-      return true;
-    }
-
-    if (
-      (first.move.targetPlayerIndex +
-        this.models.length -
-        currentGame.currentTurnPlayerIndex) %
-        this.models.length >
-      (second.move.targetPlayerIndex +
-        this.models.length -
-        currentGame.currentTurnPlayerIndex) %
-        this.models.length
-    ) {
-      return false;
-    }
-
-    return true;
+    return result.moveQuery;
   }
 }

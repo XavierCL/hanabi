@@ -447,3 +447,7 @@ export const getFocus = (
     wasUntouched: false,
   };
 };
+
+export const throwT = <T>(message: string): T => {
+  throw new Error(message);
+};
