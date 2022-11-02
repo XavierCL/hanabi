@@ -9,7 +9,6 @@ export type Score = {
   leadingMove: MoveView;
 };
 
-// Create class and properly discount
 export const firstIsBest = (
   first: Score,
   second: Score,
@@ -32,7 +31,7 @@ export const firstIsBest = (
     prepareScore(first),
     prepareScore(second)
   )) {
-    if (!firstQuantity || !secondQuantity) return true;
+    if (firstQuantity === undefined || secondQuantity === undefined) continue;
 
     if (firstQuantity > secondQuantity) return true;
     if (firstQuantity < secondQuantity) return false;

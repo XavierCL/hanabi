@@ -1,9 +1,11 @@
-import ImmutableGameView from "../../../domain/ImmutableGameView";
-import { getFocus } from "../../aiUtils";
-import { ClueIntent } from "../SingleModel";
+import { getFocus } from "../../../aiUtils";
+import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
+import { ClueIntent } from "../../SingleModel";
+import { getLayeredPlayableHypothetical } from "./layeredPlayableHypothetical";
 
 export const playClue = (
-  gameHistory: readonly ImmutableGameView[],
+  gameHistory: readonly HypotheticalGame[],
+  playerIndex: number,
   oldClueIntent: ClueIntent
 ): ClueIntent | undefined => {
   const currentGame = gameHistory[gameHistory.length - 1];
@@ -42,8 +44,20 @@ export const playClue = (
     leadingClue
   );
 
+  const { nextPlayables } = getLayeredPlayableHypothetical(currentGame);
+
+  const restrictedCard =
+    currentGame.hands[currentGame.leadingMove.targetPlayerIndex][
+      focusIndex
+    ].restrictPossibles(nextPlayables);
+
+  if (restrictedCard.possibles.length === 0) return oldClueIntent;
+
   return {
     ...oldClueIntent,
-    [newTargetPovHand[focusIndex].cardId]: "play",
+    [newTargetPovHand[focusIndex].cardId]: {
+      intent: "play",
+      possibles: restrictedCard.possibles,
+    },
   };
 };

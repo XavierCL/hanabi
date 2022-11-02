@@ -83,8 +83,10 @@ export default class ImmutableCardView<
       { color: this.color, number: this.number },
       {
         ...this.clues,
-        ...(receivedColorClue && { color: clue.color === this.color }),
-        ...(receivedNumberClue && { number: clue.number === this.number }),
+        ...(receivedColorClue && { [clue.color]: clue.color === this.color }),
+        ...(receivedNumberClue && {
+          [clue.number]: clue.number === this.number,
+        }),
       }
     );
   }

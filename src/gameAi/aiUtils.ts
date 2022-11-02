@@ -5,6 +5,7 @@ import {
   CARD_COLORS,
   CARD_NUMBERS,
 } from "../domain/ImmutableCard";
+import ImmutableCardValue from "../domain/ImmutableCardValue";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery, ClueQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView, {
@@ -36,9 +37,7 @@ export const getCardUsefulness = (
   );
 
   currentGame.fullDeck.forEach((card) => (hashToCount[hashCard(card)] += 1));
-  currentGame
-    .getKnownDiscard()
-    .forEach((card) => (hashToCount[hashCard(card)] -= 1));
+  currentGame.discarded.forEach((card) => (hashToCount[hashCard(card)] -= 1));
 
   const uselessCards = CARD_COLORS.flatMap((color) => {
     const firstMissing = CARD_NUMBERS.find(
@@ -115,7 +114,7 @@ export const getPlayableCards = (
 
 export type ClueIntent = {
   intent: "play" | "save";
-  possibles: readonly ImmutableCardView<CardColor, CardNumber>[];
+  possibles: readonly ImmutableCardValue[];
 };
 
 export const getLayeredPlayableCards = (
@@ -206,7 +205,7 @@ export const fallbackMove = (currentGame: ImmutableGameView): MoveQuery => ({
 
 export type PossibleCards = {
   card: ImmutableCardView<CardColor | undefined, CardNumber | undefined>;
-  possibles: readonly ImmutableCardView<CardColor, CardNumber>[];
+  possibles: readonly ImmutableCardValue[];
 };
 
 // todo should iterate other's possible cards too since this might be a derived pov
@@ -230,7 +229,7 @@ export const getPossibleOwnCards = (
     );
 
   const allKnownCards = playedCards
-    .concat(currentGame.getKnownDiscard())
+    .concat(currentGame.discarded)
     .concat(othersCards);
 
   const allKnownCardBuilder = allKnownCards;
@@ -265,16 +264,22 @@ export const getPossibleOwnCards = (
       const cardView = ownHand[cardIndex];
 
       const newPossibleCards = possibleCards.filter((oldPossibleCard) => {
-        const colorClueIsConsistent =
-          !(oldPossibleCard.color in cardView.clues) ||
-          cardView.clues[oldPossibleCard.color];
+        // clue is inconsistent if
+        // 1. There's no clue but card is face up, and it doesn't match possible card
+        // or 1. There's a clue and it's a negative one
+        const colorClueIsInconsistent =
+          (cardView.color && oldPossibleCard.color !== cardView.color) ||
+          (oldPossibleCard.color in cardView.clues &&
+            !cardView.clues[oldPossibleCard.color]);
 
-        const numberClueIsConsistent =
-          !(oldPossibleCard.number in cardView.clues) ||
-          cardView.clues[oldPossibleCard.number];
+        const numberClueIsInconsistent =
+          (cardView.number && oldPossibleCard.number !== cardView.number) ||
+          (oldPossibleCard.number in cardView.clues &&
+            !cardView.clues[oldPossibleCard.number]);
 
-        if (!colorClueIsConsistent || !numberClueIsConsistent) return false;
+        if (colorClueIsInconsistent || numberClueIsInconsistent) return false;
 
+        // unknown cards are updated live. Is this card still unknown?
         return allUnknownCards.some(
           (unknownCard) =>
             unknownCard.color === oldPossibleCard.color &&
@@ -339,9 +344,7 @@ export const getSingletonCards = (currentGame: ImmutableGameView) => {
   );
 
   currentGame.fullDeck.forEach((card) => (hashToCount[hashCard(card)] += 1));
-  currentGame
-    .getKnownDiscard()
-    .forEach((card) => (hashToCount[hashCard(card)] -= 1));
+  currentGame.discarded.forEach((card) => (hashToCount[hashCard(card)] -= 1));
 
   return usefulCards.filter((card) => hashToCount[hashCard(card)] === 1);
 };

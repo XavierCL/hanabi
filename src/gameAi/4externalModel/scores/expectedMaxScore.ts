@@ -1,8 +1,8 @@
 import { sortBy, sum } from "lodash";
 import { CARD_COLORS, CARD_NUMBERS } from "../../../domain/ImmutableCard";
-import ImmutableGameView from "../../../domain/ImmutableGameView";
+import { HypotheticalGame } from "../hypothetical/HypotheticalGame";
 
-export const expectedMaxScore = (currentGame: ImmutableGameView): number => {
+export const expectedMaxScore = (currentGame: HypotheticalGame): number => {
   const colorToNumberToRemaining = Object.fromEntries(
     CARD_COLORS.map((color) => [
       color,

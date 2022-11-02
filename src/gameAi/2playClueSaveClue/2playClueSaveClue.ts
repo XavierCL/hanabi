@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { CardColor, CardNumber } from "../../domain/ImmutableCard";
+import ImmutableCardValue from "../../domain/ImmutableCardValue";
 import ImmutableCardView from "../../domain/ImmutableCardView";
 import { MoveQuery, ClueQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView, { OthersHand } from "../../domain/ImmutableGameView";
@@ -40,7 +41,7 @@ Ideas:
 
 type ClueIntent = {
   intent: "play" | "save";
-  possibles: readonly ImmutableCardView<CardColor, CardNumber>[];
+  possibles: readonly ImmutableCardValue[];
 };
 
 export default class GameAi {

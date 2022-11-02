@@ -1,4 +1,4 @@
-import _, { isEqual } from "lodash";
+import _ from "lodash";
 import {
   CardColor,
   CardNumber,
@@ -35,10 +35,7 @@ export default class ImmutableGameView {
   readonly currentTurnPlayerIndex: number;
   readonly playedCards: Readonly<Record<CardColor, CardNumber | 0>>;
   readonly fullDeck: readonly ImmutableCardView<CardColor, CardNumber>[];
-  readonly discarded: readonly ImmutableCardView<
-    CardColor | undefined,
-    CardNumber | undefined
-  >[];
+  readonly discarded: readonly ImmutableCardView<CardColor, CardNumber>[];
   readonly remainingLives: number;
   readonly leadingMove: MoveView | undefined;
 
@@ -51,10 +48,7 @@ export default class ImmutableGameView {
     currentTurnPlayerIndex: number,
     playedCards: Readonly<Record<CardColor, CardNumber | 0>>,
     fullDeck: readonly ImmutableCardView<CardColor, CardNumber>[],
-    discarded: readonly ImmutableCardView<
-      CardColor | undefined,
-      CardNumber | undefined
-    >[],
+    discarded: readonly ImmutableCardView<CardColor, CardNumber>[],
     remainingLives: number,
     leadingMove: MoveView | undefined
   ) {
@@ -129,7 +123,7 @@ export default class ImmutableGameView {
     });
 
     // Can do better using negative clues and remaining count of same property
-    this.getKnownDiscard().forEach(
+    this.discarded.forEach(
       (card) => (colorToNumberToRemaining[card.color][card.number] -= 1)
     );
 
@@ -160,161 +154,6 @@ export default class ImmutableGameView {
       this.discarded,
       this.remainingLives,
       this.leadingMove
-    );
-  }
-
-  public getKnownDiscard(): readonly ImmutableCardView<
-    CardColor,
-    CardNumber
-  >[] {
-    return this.discarded.filter(
-      (card): card is ImmutableCardView<CardColor, CardNumber> =>
-        Boolean(card.color && card.number)
-    );
-  }
-
-  playInteraction(moveQuery: MoveQuery): ImmutableGameView {
-    if (
-      this.getLegalMoves().every((legalMove) => !isEqual(legalMove, moveQuery))
-    ) {
-      throw new Error("Simulated non legal move");
-    }
-
-    const { targetPlayerIndex, interaction } = moveQuery;
-
-    const newPlayed = { ...this.playedCards };
-    const discarded = this.discarded.slice();
-    let remainingClues = this.remainingClues;
-    let remainingLives = this.remainingLives;
-    let interactionCard:
-      | ImmutableCardView<CardColor | undefined, CardNumber | undefined>
-      | undefined = undefined;
-
-    const giveClue = (
-      hand: readonly ImmutableCardView<
-        CardColor | undefined,
-        CardNumber | undefined
-      >[],
-      clue: { color: CardColor } | { number: CardNumber }
-    ) => {
-      --remainingClues;
-      return hand.map((card) => card.receiveClue(clue));
-    };
-
-    const discardCard = (
-      hand: readonly ImmutableCardView<
-        CardColor | undefined,
-        CardNumber | undefined
-      >[],
-      cardId: string
-    ) => {
-      ++remainingClues;
-      const discardedIndex = hand.findIndex((card) => card.cardId === cardId);
-
-      if (discardedIndex === -1) {
-        throw new Error(`Could not discard non existing card ${cardId}`);
-      }
-
-      const discardedCard = hand[discardedIndex];
-      interactionCard = discardedCard;
-      discarded.push(discardedCard);
-      return hand.slice().splice(discardedIndex);
-    };
-
-    const playCard = (
-      hand: readonly ImmutableCardView<
-        CardColor | undefined,
-        CardNumber | undefined
-      >[],
-      cardId: string
-    ) => {
-      const playedIndex = hand.findIndex((card) => card.cardId === cardId);
-
-      if (playedIndex === -1) {
-        throw new Error(`Could not discard non existing card ${cardId}`);
-      }
-
-      const playedCardView = hand[playedIndex];
-      interactionCard = playedCardView;
-      const newHand = hand.slice().splice(playedIndex);
-
-      if (
-        playedCardView.color &&
-        playedCardView.number &&
-        newPlayed[playedCardView.color] === playedCardView.number - 1
-      ) {
-        if (playedCardView.number === 5) ++remainingClues;
-        ++newPlayed[playedCardView.color];
-      } else {
-        discarded.push(playedCardView);
-        --remainingLives;
-      }
-
-      return newHand;
-    };
-
-    const newHands = this.hands.map((hand, playerIndex) => {
-      if (playerIndex !== targetPlayerIndex) return hand;
-
-      if ("color" in interaction || "number" in interaction) {
-        return giveClue(hand, interaction);
-      }
-
-      if ("discard" in interaction) {
-        return discardCard(hand, interaction.discard);
-      }
-
-      return playCard(hand, interaction.play);
-    });
-
-    const move = ((): MoveView => {
-      const moveQueryInteraction = moveQuery.interaction;
-
-      if ("color" in moveQueryInteraction || "number" in moveQueryInteraction) {
-        return {
-          ...moveQuery,
-          interaction: moveQueryInteraction,
-        };
-      }
-
-      if ("play" in moveQueryInteraction) {
-        if (!interactionCard) {
-          throw new Error(
-            `Could not find card ${moveQueryInteraction.play} within deck`
-          );
-        }
-
-        return {
-          ...moveQuery,
-          interaction: {
-            play: interactionCard,
-          },
-        };
-      }
-
-      if (!interactionCard) {
-        throw new Error(
-          `Could not find card ${moveQueryInteraction.discard} within deck`
-        );
-      }
-
-      return {
-        ...moveQuery,
-        interaction: {
-          discard: interactionCard,
-        },
-      };
-    })();
-
-    return new ImmutableGameView(
-      remainingClues,
-      newHands,
-      (this.currentTurnPlayerIndex + 1) % this.hands.length,
-      newPlayed,
-      this.fullDeck,
-      discarded,
-      remainingLives,
-      move
     );
   }
 }

@@ -5,6 +5,7 @@ import {
   CARD_COLORS,
   CARD_NUMBERS,
 } from "../domain/ImmutableCard";
+import ImmutableCardValue from "../domain/ImmutableCardValue";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView from "../domain/ImmutableGameView";
@@ -39,7 +40,7 @@ Ideas:
 
 type ClueIntent = {
   intent: "play" | "save";
-  possibles: readonly ImmutableCardView<CardColor, CardNumber>[];
+  possibles: readonly ImmutableCardValue[];
 };
 
 export default class GameAi {
