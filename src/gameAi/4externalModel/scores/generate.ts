@@ -1,4 +1,5 @@
 import { mean, sumBy } from "lodash";
+import { CARD_COLORS } from "../../../domain/ImmutableCard";
 import { throwT } from "../../aiUtils";
 import { getLayeredPlayableHypothetical } from "../conventions/playClue/layeredPlayableHypothetical";
 import { HypotheticalGame } from "../hypothetical/HypotheticalGame";
@@ -13,7 +14,9 @@ export const generate = (currentGame: HypotheticalGame): Score => {
     remainingLives: currentGame.remainingLives,
     totalPlayed: sumBy(
       Object.entries(currentGame.playedCards),
-      ([_, playeds]) => mean(playeds)
+      ([_, playeds]) =>
+        ((CARD_COLORS.length + 1) * Math.min(...playeds) + mean(playeds)) /
+        (CARD_COLORS.length + 2)
     ),
     leadingMove:
       currentGame.leadingMove ?? throwT("Getting score for root game"),

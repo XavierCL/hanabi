@@ -5,6 +5,7 @@ import {
   CARD_COLORS,
   CARD_NUMBERS,
 } from "./ImmutableCard";
+import ImmutableCardValue from "./ImmutableCardValue";
 import ImmutableCardView from "./ImmutableCardView";
 import { MoveQuery, RemainingClues } from "./ImmutableGameState";
 
@@ -34,7 +35,7 @@ export default class ImmutableGameView {
   >[])[];
   readonly currentTurnPlayerIndex: number;
   readonly playedCards: Readonly<Record<CardColor, CardNumber | 0>>;
-  readonly fullDeck: readonly ImmutableCardView<CardColor, CardNumber>[];
+  readonly fullDeck: readonly ImmutableCardValue[];
   readonly discarded: readonly ImmutableCardView<CardColor, CardNumber>[];
   readonly remainingLives: number;
   readonly leadingMove: MoveView | undefined;
@@ -47,7 +48,7 @@ export default class ImmutableGameView {
     >[])[],
     currentTurnPlayerIndex: number,
     playedCards: Readonly<Record<CardColor, CardNumber | 0>>,
-    fullDeck: readonly ImmutableCardView<CardColor, CardNumber>[],
+    fullDeck: readonly ImmutableCardValue[],
     discarded: readonly ImmutableCardView<CardColor, CardNumber>[],
     remainingLives: number,
     leadingMove: MoveView | undefined

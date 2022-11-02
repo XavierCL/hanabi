@@ -1,4 +1,4 @@
-import { mapValues } from "lodash";
+import { mapValues, pick } from "lodash";
 import ImmutableCardValue from "../../domain/ImmutableCardValue";
 import { playClue } from "./conventions/playClue/playClue";
 import { HypotheticalGame } from "./hypothetical/HypotheticalGame";
@@ -68,6 +68,14 @@ export class SingleModel {
   public ownRestrictedPossibles(): Partial<
     Record<string, readonly ImmutableCardValue[]>
   > {
-    return mapValues(this.clueIntent, (intent) => intent?.possibles);
+    return mapValues(
+      pick(
+        this.clueIntent,
+        this.gameHistory[this.gameHistory.length - 1].hands[
+          this.playerIndex
+        ].map((card) => card.cardId)
+      ),
+      (intent) => intent?.possibles
+    );
   }
 }

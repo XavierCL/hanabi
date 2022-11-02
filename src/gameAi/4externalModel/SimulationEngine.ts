@@ -43,7 +43,13 @@ export class SimulationEngine {
   // todo make sure discount initialization works and is only computed from game not from ai
   public playOwnTurn(currentGame: ImmutableGameView): MoveQuery {
     const legalMoves = shuffle(currentGame.getLegalMoves());
-    const hypothetical = HypotheticalGame.fromGameView(currentGame);
+
+    const hypothetical = this.models.reduce(
+      (currentHypothetical, model) =>
+        currentHypothetical.restrictPossibles(model.ownRestrictedPossibles()),
+      HypotheticalGame.fromGameView(currentGame)
+    );
+
     const result = legalMoves.reduce<
       (Score & { moveQuery: MoveQuery }) | undefined
     >((bestResult, currentMove) => {

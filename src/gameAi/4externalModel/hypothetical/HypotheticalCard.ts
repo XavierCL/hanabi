@@ -7,7 +7,7 @@ import {
 import ImmutableCardValue from "../../../domain/ImmutableCardValue";
 import ImmutableCardView from "../../../domain/ImmutableCardView";
 import { MoveQuery } from "../../../domain/ImmutableGameState";
-import { hashCard } from "../../aiUtils";
+import { cardConsistentWithClue, hashCard } from "../../aiUtils";
 
 export default class HypotheticalCard<
   Color extends CardColor | undefined,
@@ -20,18 +20,21 @@ export default class HypotheticalCard<
   readonly numberClued: boolean;
   readonly clues: Partial<Readonly<Record<CardNumber | CardColor, boolean>>>;
   readonly possibles: readonly ImmutableCardValue[];
+  readonly ownPossibles: readonly ImmutableCardValue[];
 
   public static fromCardView = <
     Color extends CardColor | undefined,
     Digit extends number | undefined
   >(
     card: ImmutableCardView<Color, Digit>,
-    possibles: readonly ImmutableCardValue[]
+    possibles: readonly ImmutableCardValue[],
+    ownPossibles: readonly ImmutableCardValue[]
   ) => {
     return new HypotheticalCard(
       card.cardId,
       { color: card.color, number: card.number },
       possibles,
+      ownPossibles,
       card.clues
     );
   };
@@ -40,14 +43,14 @@ export default class HypotheticalCard<
     cardId: string,
     { color, number }: { color: Color; number: Digit },
     possibles: readonly ImmutableCardValue[],
+    ownPossibles: readonly ImmutableCardValue[],
     clues?: Partial<Readonly<Record<CardNumber | CardColor, boolean>>>
   ) {
     this.cardId = cardId;
     this.clues = clues ?? {};
     this.possibles = possibles.filter(
       (card) =>
-        (!(card.color in this.clues) || this.clues[card.color]) &&
-        (!(card.number in this.clues) || this.clues[card.number]) &&
+        cardConsistentWithClue(card, this.clues) &&
         (color === undefined || card.color === color) &&
         (number === undefined || card.number === number)
     );
@@ -61,6 +64,10 @@ export default class HypotheticalCard<
       isCardNumber(Number(clue))
     );
 
+    this.ownPossibles = ownPossibles.filter((card) =>
+      cardConsistentWithClue(card, this.clues)
+    );
+
     this.color = ((): Color => {
       if (color) return color;
 
@@ -72,7 +79,7 @@ export default class HypotheticalCard<
     })();
 
     this.number = ((): Digit => {
-      if (color) return number;
+      if (number) return number;
 
       if (new Set(possibles.map((possible) => possible.number)).size === 1) {
         return possibles[0].number as Digit;
@@ -91,7 +98,8 @@ export default class HypotheticalCard<
           ? (this.number as CardNumber | undefined)
           : undefined,
       },
-      this.possibles,
+      this.ownPossibles,
+      this.ownPossibles,
       this.clues
     );
   }
@@ -136,6 +144,7 @@ export default class HypotheticalCard<
       this.cardId,
       { color: this.color, number: this.number },
       this.possibles,
+      this.ownPossibles,
       {
         ...this.clues,
         ...(receivedColorClue && { [clue.color]: clue.color === this.color }),
@@ -155,6 +164,9 @@ export default class HypotheticalCard<
       this.cardId,
       { color: this.color, number: this.number },
       this.possibles.filter((oldPossible) =>
+        newPossibleSet.has(hashCard(oldPossible))
+      ),
+      this.ownPossibles.filter((oldPossible) =>
         newPossibleSet.has(hashCard(oldPossible))
       ),
       this.clues

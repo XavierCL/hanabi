@@ -1,4 +1,5 @@
 import _ from "lodash";
+import ImmutableCardValue from "./ImmutableCardValue";
 import ImmutableCardView from "./ImmutableCardView";
 
 export const CARD_COLORS = [
@@ -66,12 +67,8 @@ export default class ImmutableCard {
   }
 
   // Players know the full deck, but not which card id has which color or number, since they know the card id of even face down cards
-  asFullDeck(): ImmutableCardView<CardColor, CardNumber> {
-    return new ImmutableCardView(
-      "",
-      { color: this.color, number: this.number },
-      {}
-    );
+  asFullDeck(): ImmutableCardValue {
+    return new ImmutableCardValue(this.color, this.number);
   }
 
   receiveClue(

@@ -5,21 +5,14 @@ import {
   CARD_NUMBERS,
 } from "../../../../domain/ImmutableCard";
 import ImmutableCardValue from "../../../../domain/ImmutableCardValue";
-import { hashCard, hashCard2 } from "../../../aiUtils";
+import { hashCard } from "../../../aiUtils";
 import HypotheticalCard from "../../hypothetical/HypotheticalCard";
 import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
 
 export const getLayeredPlayableHypothetical = (
   game: HypotheticalGame
 ): { nextPlayables: readonly ImmutableCardValue[]; layerCount: number } => {
-  const allKnownCardSet = new Set(
-    game.hands
-      .flat()
-      .filter((card): card is HypotheticalCard<CardColor, CardNumber> =>
-        Boolean(card.number && card.color)
-      )
-      .map(hashCard)
-  );
+  const allHandCards = game.hands.flat();
 
   const nonDiscardedCards = mapValues(
     groupBy(game.fullDeck, hashCard),
@@ -43,22 +36,30 @@ export const getLayeredPlayableHypothetical = (
     .filter(([_, playeds]) => playeds.length === 1)
     .map(([color, playeds]) => {
       let nextPlayable = (playeds[0] + 1) as CardNumber;
-      const nextLayeredPlayable = range(
+
+      for (const currentNumber of range(
         nextPlayable,
         CARD_NUMBERS[CARD_NUMBERS.length - 1] + 1
-      ).find((currentNumber) => {
-        const isLayered = allKnownCardSet.has(
-          hashCard2(color as CardColor, currentNumber as CardNumber)
+      )) {
+        const matchingCardIndex = allHandCards.findIndex(
+          (card) =>
+            card.possibles.length > 0 &&
+            card.ownPossibles.every(
+              (possible) =>
+                possible.color === color && possible.number === currentNumber
+            )
         );
 
-        if (isLayered) {
-          ++layerCount;
+        if (matchingCardIndex === -1) {
+          break;
         }
 
-        return isLayered;
-      });
+        ++layerCount;
+        ++nextPlayable;
+        allHandCards.splice(matchingCardIndex);
+      }
 
-      return nextLayeredPlayable
+      return nextPlayable < CARD_NUMBERS[CARD_NUMBERS.length - 1] + 1
         ? new ImmutableCardValue(color as CardColor, nextPlayable)
         : undefined;
     })

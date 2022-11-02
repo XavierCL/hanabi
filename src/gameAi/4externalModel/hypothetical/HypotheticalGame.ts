@@ -35,10 +35,22 @@ export class HypotheticalGame {
         .map((possible) => [possible.card.cardId, possible.possibles])
     );
 
+    const ownPossibles = Object.fromEntries(
+      range(gameView.hands.length)
+        .flatMap((playerIndex) =>
+          getPossibleOwnCards(gameView.asView(playerIndex), playerIndex)
+        )
+        .map((possible) => [possible.card.cardId, possible.possibles])
+    );
+
     const makeYourCardComeTrue = (
       card: ImmutableCardView<CardColor | undefined, CardNumber | undefined>
     ): HypotheticalCard<CardColor | undefined, CardNumber | undefined> => {
-      return HypotheticalCard.fromCardView(card, possibles[card.cardId]);
+      return HypotheticalCard.fromCardView(
+        card,
+        possibles[card.cardId],
+        ownPossibles[card.cardId]
+      );
     };
 
     return new HypotheticalGame(
@@ -48,7 +60,11 @@ export class HypotheticalGame {
       mapValues(gameView.playedCards, (number) => [number]),
       gameView.fullDeck,
       gameView.discarded.map((card) =>
-        HypotheticalCard.fromCardView(card, [card])
+        HypotheticalCard.fromCardView(
+          card,
+          [new ImmutableCardValue(card.color, card.number)],
+          [new ImmutableCardValue(card.color, card.number)]
+        )
       ),
       gameView.remainingLives,
       gameView.leadingMove
@@ -280,7 +296,7 @@ export class HypotheticalGame {
         playedCardView.possibles.some(
           (possibleCard) =>
             newPlayed[possibleCard.color].length > 1 ||
-            newPlayed[possibleCard.color][0] !== possibleCard.number
+            newPlayed[possibleCard.color][0] + 1 !== possibleCard.number
         )
       ) {
         discarded.push(playedCardView);

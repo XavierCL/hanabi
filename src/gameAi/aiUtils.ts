@@ -1,4 +1,4 @@
-import _, { zip } from "lodash";
+import _, { pick, uniqBy, zip } from "lodash";
 import {
   CardColor,
   CardNumber,
@@ -60,10 +60,7 @@ export const getCardUsefulness = (
   );
 
   const uselessHashes = new Set(uselessCards.map(hashCard));
-  const usefulHashToCard: Record<
-    string,
-    ImmutableCardView<CardColor, CardNumber>
-  > = {};
+  const usefulHashToCard: Record<string, ImmutableCardValue> = {};
 
   currentGame.fullDeck.forEach((card) =>
     uselessHashes.has(hashCard(card))
@@ -98,6 +95,34 @@ export const getCardUsefulness = (
     uselessCards,
     usefulCards,
   };
+};
+
+export const cardConsistentWithClue = (
+  card: ImmutableCardValue,
+  clue: Partial<Record<CardColor | CardNumber, boolean>>
+) => {
+  const cardColorClue = clue[card.color];
+  const cardNumberClue = clue[card.number];
+
+  if (cardColorClue === false || cardNumberClue === false) return false;
+
+  // Another color was clued
+  if (
+    cardColorClue !== true &&
+    Object.values(pick(clue, CARD_COLORS)).includes(true)
+  ) {
+    return false;
+  }
+
+  // Another number was clued
+  if (
+    cardNumberClue !== true &&
+    Object.values(pick(clue, CARD_NUMBERS)).includes(true)
+  ) {
+    return false;
+  }
+
+  return true;
 };
 
 export const getPlayableCards = (
@@ -267,17 +292,19 @@ export const getPossibleOwnCards = (
         // clue is inconsistent if
         // 1. There's no clue but card is face up, and it doesn't match possible card
         // or 1. There's a clue and it's a negative one
-        const colorClueIsInconsistent =
-          (cardView.color && oldPossibleCard.color !== cardView.color) ||
-          (oldPossibleCard.color in cardView.clues &&
-            !cardView.clues[oldPossibleCard.color]);
+        const colorIsInconsistent =
+          cardView.color && oldPossibleCard.color !== cardView.color;
 
-        const numberClueIsInconsistent =
-          (cardView.number && oldPossibleCard.number !== cardView.number) ||
-          (oldPossibleCard.number in cardView.clues &&
-            !cardView.clues[oldPossibleCard.number]);
+        const numberIsInconsistent =
+          cardView.number && oldPossibleCard.number !== cardView.number;
 
-        if (colorClueIsInconsistent || numberClueIsInconsistent) return false;
+        if (
+          colorIsInconsistent ||
+          numberIsInconsistent ||
+          !cardConsistentWithClue(oldPossibleCard, cardView.clues)
+        ) {
+          return false;
+        }
 
         // unknown cards are updated live. Is this card still unknown?
         return allUnknownCards.some(
@@ -307,7 +334,7 @@ export const getPossibleOwnCards = (
 
   return nextPossibleCards.map((possibles, cardIndex) => ({
     card: ownHand[cardIndex],
-    possibles,
+    possibles: uniqBy(possibles, hashCard),
   }));
 };
 

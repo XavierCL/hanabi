@@ -51,8 +51,6 @@ export const playClue = (
       focusIndex
     ].restrictPossibles(nextPlayables);
 
-  if (restrictedCard.possibles.length === 0) return oldClueIntent;
-
   return {
     ...oldClueIntent,
     [newTargetPovHand[focusIndex].cardId]: {

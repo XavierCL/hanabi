@@ -4,7 +4,7 @@ import ImmutableCard, {
   CardNumber,
   CARD_COLORS,
 } from "./ImmutableCard";
-import ImmutableCardView from "./ImmutableCardView";
+import ImmutableCardValue from "./ImmutableCardValue";
 import ImmutableGameView, { MoveView } from "./ImmutableGameView";
 import ImmutableHand from "./ImmutableHand";
 
@@ -53,10 +53,7 @@ export default class ImmutableGameState {
 
   private readonly remainingDeck: readonly ImmutableCard[];
   private readonly fullDeck: readonly ImmutableCard[];
-  private readonly fullDeckView: readonly ImmutableCardView<
-    CardColor,
-    CardNumber
-  >[];
+  private readonly fullDeckView: readonly ImmutableCardValue[];
 
   static from(numberOfPlayers: number): ImmutableGameState {
     const allNumbersAndQuantities = [
@@ -136,7 +133,7 @@ export default class ImmutableGameState {
     remainingClues: RemainingClues,
     leadingMove: Move | undefined,
     endTurn: number | undefined,
-    fullDeckView: readonly ImmutableCardView<CardColor, CardNumber>[]
+    fullDeckView: readonly ImmutableCardValue[]
   ) {
     this.turnCount = turnCount;
     this.hands = hands;
