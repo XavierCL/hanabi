@@ -11,8 +11,8 @@ export const firstIsBest = (
     score.remainingLives,
     -score.misplayCount,
     -score.misledCount,
-    score.maxScore,
     score.totalPlayed,
+    score.maxScore,
     -(
       (score.leadingMove.targetPlayerIndex +
         currentGame.hands.length -
