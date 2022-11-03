@@ -26,8 +26,16 @@ export class SingleModel {
     clueIntent: ClueIntent = {}
   ) {
     this.playerIndex = playerIndex;
-    this.gameHistory = gameHistory;
     this.clueIntent = clueIntent;
+
+    this.gameHistory = gameHistory.length
+      ? [
+          ...gameHistory,
+          gameHistory[gameHistory.length - 1].restrictPossibles(
+            this.restrictedPossibles(false)
+          ),
+        ]
+      : [];
   }
 
   private fromNextGameHistory(
@@ -62,10 +70,7 @@ export class SingleModel {
       return undefined;
     })();
 
-    return this.fromNextGameHistory(
-      restrictedNextTurn,
-      updatedIntent ?? this.clueIntent
-    );
+    return this.fromNextGameHistory(nextTurn, updatedIntent ?? this.clueIntent);
   }
 
   public restrictedPossibles(

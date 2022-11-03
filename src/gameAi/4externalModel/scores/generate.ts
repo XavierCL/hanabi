@@ -24,11 +24,19 @@ export const generate = (currentGame: HypotheticalGame) => {
     playableCount: layerCount,
     misledCount: currentGame.hands.flat().filter((card) => {
       const othersPossible = new Set(card.possibles.map(hashCard));
-      const intersestCount = card.ownPossibles.filter((possible) =>
+      const intersectCount = card.ownPossibles.filter((possible) =>
         othersPossible.has(hashCard(possible))
       ).length;
 
-      return intersestCount === 0;
+      return intersectCount === 0;
+    }).length,
+    misplayCount: currentGame.hands.flat().filter((card) => {
+      const othersPossible = new Set(card.possibles.map(hashCard));
+      const intersectCount = card.ownPossibles.filter((possible) =>
+        othersPossible.has(hashCard(possible))
+      ).length;
+
+      return intersectCount === 0 && card.ownPossibles.length > 0;
     }).length,
   };
 };
