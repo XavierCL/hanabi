@@ -66,7 +66,7 @@ export class SimulationEngine {
       );
 
       const currentResult = {
-        ...generate(finalHypothetical),
+        ...generate([hypothetical, finalHypothetical]),
         moveQuery: currentMove,
       };
 

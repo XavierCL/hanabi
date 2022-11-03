@@ -12,6 +12,7 @@ export const firstIsBest = (
     -score.misplayCount,
     -score.misledCount,
     score.totalPlayed,
+    -score.hasImproperDiscard,
     score.maxScore,
     -(
       (score.leadingMove.targetPlayerIndex +

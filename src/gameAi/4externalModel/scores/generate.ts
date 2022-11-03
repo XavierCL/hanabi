@@ -1,12 +1,14 @@
 import { mean, sumBy } from "lodash";
 import { CARD_COLORS } from "../../../domain/ImmutableCard";
 import { MoveView } from "../../../domain/ImmutableGameView";
-import { hashCard, throwT } from "../../aiUtils";
+import { getChop, hashCard, throwT } from "../../aiUtils";
 import { getLayeredPlayableHypothetical } from "../conventions/playClue/layeredPlayableHypothetical";
 import { HypotheticalGame } from "../hypothetical/HypotheticalGame";
 import { expectedMaxScore } from "./expectedMaxScore";
 
-export const generate = (currentGame: HypotheticalGame) => {
+export const generate = (history: readonly HypotheticalGame[]) => {
+  const inductionStep = history[history.length - 2];
+  const currentGame = history[history.length - 1];
   const { layerCount } = getLayeredPlayableHypothetical(currentGame);
 
   return {
@@ -38,6 +40,22 @@ export const generate = (currentGame: HypotheticalGame) => {
 
       return intersectCount === 0 && card.ownPossibles.length > 0;
     }).length,
+    hasImproperDiscard: (() => {
+      if (!currentGame.leadingMove) return 0;
+
+      if (!("discard" in currentGame.leadingMove.interaction)) return 0;
+
+      const chopInfo = getChop(
+        inductionStep.hands[currentGame.leadingMove.targetPlayerIndex]
+      );
+
+      if (!chopInfo) return 0;
+
+      return chopInfo.chop.cardId ===
+        currentGame.leadingMove.interaction.discard.cardId
+        ? 0
+        : 1;
+    })(),
   };
 };
 
