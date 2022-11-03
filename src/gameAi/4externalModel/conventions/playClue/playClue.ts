@@ -44,7 +44,7 @@ export const playClue = (
     leadingClue
   );
 
-  const { nextPlayables } = getLayeredPlayableHypothetical(currentGame);
+  const { nextPlayables } = getLayeredPlayableHypothetical(inductionStart);
 
   const restrictedCard =
     currentGame.hands[currentGame.leadingMove.targetPlayerIndex][

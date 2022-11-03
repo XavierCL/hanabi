@@ -1,13 +1,6 @@
 import { zip } from "lodash";
-import ImmutableGameView, { MoveView } from "../../../domain/ImmutableGameView";
-
-export type Score = {
-  maxScore: number;
-  remainingLives: number;
-  totalPlayed: number;
-  playableCount: number;
-  leadingMove: MoveView;
-};
+import ImmutableGameView from "../../../domain/ImmutableGameView";
+import { Score } from "./generate";
 
 export const firstIsBest = (
   first: Score,
@@ -18,6 +11,7 @@ export const firstIsBest = (
     score.remainingLives,
     score.maxScore,
     score.totalPlayed,
+    -score.misledCount,
     -(
       (score.leadingMove.targetPlayerIndex +
         currentGame.hands.length -

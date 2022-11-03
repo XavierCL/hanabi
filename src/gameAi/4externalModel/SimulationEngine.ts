@@ -2,17 +2,17 @@ import { range, shuffle } from "lodash";
 import { MoveQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView from "../../domain/ImmutableGameView";
 import { HypotheticalGame } from "./hypothetical/HypotheticalGame";
-import { firstIsBest, Score } from "./scores/compare";
-import { generate } from "./scores/generate";
+import { firstIsBest } from "./scores/compare";
+import { generate, Score } from "./scores/generate";
 import { SingleModel } from "./SingleModel";
 
 export class SimulationEngine {
   private readonly models: readonly SingleModel[];
 
   public static from(
-    gameHistory: readonly ImmutableGameView[]
+    gameHistory: readonly ImmutableGameView[],
+    playerCount: number
   ): SimulationEngine {
-    const playerCount = gameHistory[0].hands.length;
     return new SimulationEngine(
       range(playerCount).map(
         (playerIndex) =>
@@ -46,7 +46,7 @@ export class SimulationEngine {
 
     const hypothetical = this.models.reduce(
       (currentHypothetical, model) =>
-        currentHypothetical.restrictPossibles(model.ownRestrictedPossibles()),
+        currentHypothetical.restrictPossibles(model.restrictedPossibles(true)),
       HypotheticalGame.fromGameView(currentGame)
     );
 
@@ -60,7 +60,7 @@ export class SimulationEngine {
           currentHypothetical.restrictPossibles(
             model
               .observeTurn(nextTurn.asView(playerIndex))
-              .ownRestrictedPossibles()
+              .restrictedPossibles(true)
           ),
         nextTurn
       );

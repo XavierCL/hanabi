@@ -1,4 +1,4 @@
-import { groupBy, mapValues, range } from "lodash";
+import { clone, groupBy, isEqual, mapValues, range } from "lodash";
 import {
   CardColor,
   CardNumber,
@@ -30,34 +30,60 @@ export const getLayeredPlayableHypothetical = (
       }
     });
 
-  let layerCount = 0;
+  let totalLayerCount = 0;
 
-  const nextPlayables = Object.entries(game.playedCards)
+  // Should go card by card, not color by color, because some cards we don't know the color but are still playable on two colors
+  const layedPlayedCards = clone(game.playedCards) as Record<
+    CardColor,
+    (CardNumber | 0)[]
+  >;
+  let lastMaybePlayableCardIndices: number[] = [];
+  const currentMaybePlayableCardIndices = range(allHandCards.length).filter(
+    (cardIndex) => allHandCards[cardIndex].possibles.length > 0
+  );
+
+  while (
+    !isEqual(lastMaybePlayableCardIndices, currentMaybePlayableCardIndices)
+  ) {
+    lastMaybePlayableCardIndices = currentMaybePlayableCardIndices.slice();
+    const iteratedMaybePlayable = currentMaybePlayableCardIndices.slice();
+
+    for (const maybePlayableCardIndex of iteratedMaybePlayable) {
+      const maybePlayableCard = allHandCards[maybePlayableCardIndex];
+
+      if (
+        maybePlayableCard.ownPossibles.every(
+          (possible) =>
+            layedPlayedCards[possible.color].length === 1 &&
+            layedPlayedCards[possible.color][0] + 1 === possible.number
+        )
+      ) {
+        totalLayerCount = (1 + 1 / maybePlayableCard.ownPossibles.length) / 2;
+        currentMaybePlayableCardIndices.splice(
+          currentMaybePlayableCardIndices.indexOf(maybePlayableCardIndex),
+          1
+        );
+
+        if (maybePlayableCard.ownPossibles.length === 1) {
+          const possible = maybePlayableCard.ownPossibles[0];
+          layedPlayedCards[possible.color] = [possible.number];
+        } else {
+          maybePlayableCard.ownPossibles.forEach(
+            (possible) =>
+              (layedPlayedCards[possible.color] = [
+                ...layedPlayedCards[possible.color],
+                possible.number,
+              ])
+          );
+        }
+      }
+    }
+  }
+
+  const nextPlayables = Object.entries(layedPlayedCards)
     .filter(([_, playeds]) => playeds.length === 1)
     .map(([color, playeds]) => {
       let nextPlayable = (playeds[0] + 1) as CardNumber;
-
-      for (const currentNumber of range(
-        nextPlayable,
-        CARD_NUMBERS[CARD_NUMBERS.length - 1] + 1
-      )) {
-        const matchingCardIndex = allHandCards.findIndex(
-          (card) =>
-            card.possibles.length > 0 &&
-            card.ownPossibles.every(
-              (possible) =>
-                possible.color === color && possible.number === currentNumber
-            )
-        );
-
-        if (matchingCardIndex === -1) {
-          break;
-        }
-
-        ++layerCount;
-        ++nextPlayable;
-        allHandCards.splice(matchingCardIndex);
-      }
 
       return nextPlayable < CARD_NUMBERS[CARD_NUMBERS.length - 1] + 1
         ? new ImmutableCardValue(color as CardColor, nextPlayable)
@@ -66,5 +92,5 @@ export const getLayeredPlayableHypothetical = (
     .filter((card): card is ImmutableCardValue => Boolean(card))
     .filter((card) => nonDiscardedCards[hashCard(card)] > 0);
 
-  return { nextPlayables, layerCount };
+  return { nextPlayables, layerCount: totalLayerCount };
 };

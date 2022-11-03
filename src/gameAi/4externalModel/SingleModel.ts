@@ -43,10 +43,10 @@ export class SingleModel {
 
   public observeTurn(nextTurn: HypotheticalGame): SingleModel {
     const conventions = [playClue];
-    const gameHistory = [
-      ...this.gameHistory,
-      nextTurn.restrictPossibles(this.ownRestrictedPossibles()),
-    ];
+    const restrictedNextTurn = nextTurn.restrictPossibles(
+      this.restrictedPossibles(false)
+    );
+    const gameHistory = [...this.gameHistory, restrictedNextTurn];
 
     const updatedIntent = (() => {
       for (const convention of conventions) {
@@ -62,20 +62,24 @@ export class SingleModel {
       return undefined;
     })();
 
-    return this.fromNextGameHistory(nextTurn, updatedIntent ?? this.clueIntent);
+    return this.fromNextGameHistory(
+      restrictedNextTurn,
+      updatedIntent ?? this.clueIntent
+    );
   }
 
-  public ownRestrictedPossibles(): Partial<
-    Record<string, readonly ImmutableCardValue[]>
-  > {
-    return mapValues(
-      pick(
-        this.clueIntent,
-        this.gameHistory[this.gameHistory.length - 1].hands[
-          this.playerIndex
-        ].map((card) => card.cardId)
-      ),
-      (intent) => intent?.possibles
-    );
+  public restrictedPossibles(
+    ownOnly: boolean
+  ): Partial<Record<string, readonly ImmutableCardValue[]>> {
+    const shownClues = ownOnly
+      ? pick(
+          this.clueIntent,
+          this.gameHistory[this.gameHistory.length - 1].hands[
+            this.playerIndex
+          ].map((card) => card.cardId)
+        )
+      : this.clueIntent;
+
+    return mapValues(shownClues, (intent) => intent?.possibles);
   }
 }

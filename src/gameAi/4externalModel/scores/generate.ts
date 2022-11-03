@@ -1,12 +1,12 @@
 import { mean, sumBy } from "lodash";
 import { CARD_COLORS } from "../../../domain/ImmutableCard";
-import { throwT } from "../../aiUtils";
+import { MoveView } from "../../../domain/ImmutableGameView";
+import { hashCard, throwT } from "../../aiUtils";
 import { getLayeredPlayableHypothetical } from "../conventions/playClue/layeredPlayableHypothetical";
 import { HypotheticalGame } from "../hypothetical/HypotheticalGame";
-import { Score } from "./compare";
 import { expectedMaxScore } from "./expectedMaxScore";
 
-export const generate = (currentGame: HypotheticalGame): Score => {
+export const generate = (currentGame: HypotheticalGame) => {
   const { layerCount } = getLayeredPlayableHypothetical(currentGame);
 
   return {
@@ -19,7 +19,18 @@ export const generate = (currentGame: HypotheticalGame): Score => {
         (CARD_COLORS.length + 2)
     ),
     leadingMove:
-      currentGame.leadingMove ?? throwT("Getting score for root game"),
+      currentGame.leadingMove ??
+      throwT<MoveView>("Getting score for root game"),
     playableCount: layerCount,
+    misledCount: currentGame.hands.flat().filter((card) => {
+      const othersPossible = new Set(card.possibles.map(hashCard));
+      const intersestCount = card.ownPossibles.filter((possible) =>
+        othersPossible.has(hashCard(possible))
+      ).length;
+
+      return intersestCount === 0;
+    }).length,
   };
 };
+
+export type Score = ReturnType<typeof generate>;

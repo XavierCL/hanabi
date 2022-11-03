@@ -270,7 +270,7 @@ export class HypotheticalGame {
       const discardedCard = hand[discardedIndex];
       interactionCard = discardedCard;
       discarded.push(discardedCard);
-      return hand.slice().splice(discardedIndex);
+      return hand.slice().splice(discardedIndex, 1);
     };
 
     const playCard = (
@@ -288,7 +288,7 @@ export class HypotheticalGame {
 
       const playedCardView = hand[playedIndex];
       interactionCard = playedCardView;
-      const newHand = hand.slice().splice(playedIndex);
+      const newHand = hand.slice().splice(playedIndex, 1);
 
       // Pessimistic view, if all possibles are playable, then its good
       if (

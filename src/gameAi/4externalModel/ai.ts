@@ -11,19 +11,21 @@ export default class GameAi {
 
   observeOthersTurn(gameHistory: readonly ImmutableGameView[]): GameAi {
     return new GameAi(
-      this.self(gameHistory).observeOthersTurn(
-        gameHistory[gameHistory.length - 1]
-      )
+      this.self(
+        gameHistory.slice(0, -1),
+        gameHistory[gameHistory.length - 1].hands.length
+      ).observeOthersTurn(gameHistory[gameHistory.length - 1])
     );
   }
 
   playOwnTurn(gameHistory: readonly ImmutableGameView[]): MoveQuery {
-    return this.self(gameHistory).playOwnTurn(
-      gameHistory[gameHistory.length - 1]
-    );
+    return this.self(
+      gameHistory,
+      gameHistory[gameHistory.length - 1].hands.length
+    ).playOwnTurn(gameHistory[gameHistory.length - 1]);
   }
 
-  private self(gameHistory: readonly ImmutableGameView[]) {
-    return this.engine ?? SimulationEngine.from(gameHistory);
+  private self(gameHistory: readonly ImmutableGameView[], playerCount: number) {
+    return this.engine ?? SimulationEngine.from(gameHistory, playerCount);
   }
 }
