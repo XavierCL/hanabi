@@ -9,9 +9,9 @@ export const firstIsBest = (
 ): boolean => {
   const prepareScore = (score: Score) => [
     score.remainingLives,
+    -score.misledCount,
     score.maxScore,
     score.totalPlayed,
-    -score.misledCount,
     -(
       (score.leadingMove.targetPlayerIndex +
         currentGame.hands.length -

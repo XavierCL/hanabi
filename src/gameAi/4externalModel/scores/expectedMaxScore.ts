@@ -14,52 +14,32 @@ export const expectedMaxScore = (currentGame: HypotheticalGame): number => {
     colorToNumberToRemaining[card.color][card.number] += 1;
   });
 
-  // Can do better using negative clues and remaining count of same property
-  currentGame.getKnownDiscard().forEach((card) => {
-    colorToNumberToRemaining[card.color][card.number] -= 1;
-  });
-
   const max0 = (n: number): number => Math.max(n, 0);
+  const min1 = (n: number): number => Math.min(n, 1);
 
   currentGame.discarded.forEach((card) => {
-    if (card.color) {
-      const cardColor = card.color;
-
-      CARD_NUMBERS.forEach(
-        (number) =>
-          (colorToNumberToRemaining[cardColor][number] = max0(
-            colorToNumberToRemaining[cardColor][number] - 1
-          ))
-      );
-    } else if (card.number) {
-      const cardNumber = card.number;
-      CARD_COLORS.forEach(
-        (color) =>
-          (colorToNumberToRemaining[color][cardNumber] = max0(
-            colorToNumberToRemaining[color][cardNumber] - 1
-          ))
-      );
-    } else {
-      CARD_COLORS.forEach((color) =>
-        CARD_NUMBERS.forEach(
-          (number) =>
-            (colorToNumberToRemaining[color][number] = max0(
-              colorToNumberToRemaining[color][number] - 1
-            ))
-        )
-      );
-    }
+    card.possibles.forEach(
+      (possible) =>
+        (colorToNumberToRemaining[possible.color][possible.number] = max0(
+          colorToNumberToRemaining[possible.color][possible.number] -
+            1 / card.possibles.length
+        ))
+    );
   });
 
   return sum(
     CARD_COLORS.map(
       (color) =>
-        ((sortBy(
+        sortBy(
           Object.entries(colorToNumberToRemaining[color]),
           ([number]) => number
-        ).find(([_, remaining]) => !Boolean(remaining))?.[0] as
-          | number
-          | undefined) ?? 6) - 1
+        ).reduce(
+          ({ maxScore, likelyhood }, [_, remaining]) => ({
+            maxScore: maxScore + likelyhood * min1(remaining),
+            likelyhood: likelyhood * min1(remaining),
+          }),
+          { maxScore: 0, likelyhood: 1 }
+        ).maxScore
     )
   );
 };

@@ -267,10 +267,11 @@ export class HypotheticalGame {
         throw new Error(`Could not discard non existing card ${cardId}`);
       }
 
-      const discardedCard = hand[discardedIndex];
+      const newHand = hand.slice();
+      const [discardedCard] = newHand.splice(discardedIndex, 1);
       interactionCard = discardedCard;
       discarded.push(discardedCard);
-      return hand.slice().splice(discardedIndex, 1);
+      return newHand;
     };
 
     const playCard = (
@@ -286,9 +287,9 @@ export class HypotheticalGame {
         throw new Error(`Could not discard non existing card ${cardId}`);
       }
 
-      const playedCardView = hand[playedIndex];
+      const newHand = hand.slice();
+      const [playedCardView] = newHand.splice(playedIndex, 1);
       interactionCard = playedCardView;
-      const newHand = hand.slice().splice(playedIndex, 1);
 
       // Pessimistic view, if all possibles are playable, then its good
       if (
