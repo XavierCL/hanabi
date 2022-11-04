@@ -1,6 +1,7 @@
 import { mapValues, pick } from "lodash";
 import ImmutableCardValue from "../../domain/ImmutableCardValue";
 import { playClue } from "./conventions/playClue/playClue";
+import { saveClue } from "./conventions/saveClue/saveClue";
 import { HypotheticalGame } from "./hypothetical/HypotheticalGame";
 
 export type ClueIntent = Partial<
@@ -50,7 +51,7 @@ export class SingleModel {
   }
 
   public observeTurn(nextTurn: HypotheticalGame): SingleModel {
-    const conventions = [playClue];
+    const conventions = [saveClue, playClue];
     const restrictedNextTurn = nextTurn.restrictPossibles(
       this.restrictedPossibles(false)
     );
@@ -58,11 +59,7 @@ export class SingleModel {
 
     const updatedIntent = (() => {
       for (const convention of conventions) {
-        const maybeIntent = convention(
-          gameHistory,
-          this.playerIndex,
-          this.clueIntent
-        );
+        const maybeIntent = convention(gameHistory, this.clueIntent);
 
         if (maybeIntent) return maybeIntent;
       }

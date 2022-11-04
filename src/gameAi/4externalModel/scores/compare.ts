@@ -1,26 +1,17 @@
 import { zip } from "lodash";
-import ImmutableGameView from "../../../domain/ImmutableGameView";
 import { Score } from "./generate";
 
-export const firstIsBest = (
-  first: Score,
-  second: Score,
-  currentGame: ImmutableGameView
-): boolean => {
+export const firstIsBest = (first: Score, second: Score): boolean => {
   const prepareScore = (score: Score) => [
     score.remainingLives,
     -score.misplayCount,
     -score.misledCount,
-    score.totalPlayed,
     -score.hasImproperDiscard,
     score.maxScore,
-    -(
-      (score.leadingMove.targetPlayerIndex +
-        currentGame.hands.length -
-        currentGame.currentTurnPlayerIndex) %
-      currentGame.hands.length
-    ),
+    score.totalPlayed,
+    score.sequencePlayableCount,
     score.playableCount,
+    score.nextPlayableCount,
   ];
 
   for (const [firstQuantity, secondQuantity] of zip(

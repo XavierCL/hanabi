@@ -9,10 +9,10 @@ export const CARD_COLORS = [
   "green",
   "purple",
 ] as const;
-export const CARD_NUMBERS = [1, 2, 3, 4, 5];
-const CARD_COLOR_SET = new Set(CARD_COLORS);
 export type CardColor = "red" | "yellow" | "blue" | "green" | "purple";
 export type CardNumber = 1 | 2 | 3 | 4 | 5;
+export const CARD_NUMBERS: CardNumber[] = [1, 2, 3, 4, 5];
+const CARD_COLOR_SET = new Set(CARD_COLORS);
 
 export const isCardColor = (color: any): color is CardColor =>
   CARD_COLOR_SET.has(color);

@@ -72,7 +72,7 @@ export class SimulationEngine {
 
       if (!bestResult) return currentResult;
 
-      return firstIsBest(bestResult, currentResult, currentGame)
+      return firstIsBest(bestResult, currentResult)
         ? bestResult
         : currentResult;
     }, undefined);

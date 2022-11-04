@@ -5,11 +5,14 @@ import { getChop, hashCard, throwT } from "../../aiUtils";
 import { getLayeredPlayableHypothetical } from "../conventions/playClue/layeredPlayableHypothetical";
 import { HypotheticalGame } from "../hypothetical/HypotheticalGame";
 import { expectedMaxScore } from "./expectedMaxScore";
+import { getSequencePlayableHypothetical } from "./sequencePlayableHypothetical";
 
 export const generate = (history: readonly HypotheticalGame[]) => {
   const inductionStep = history[history.length - 2];
   const currentGame = history[history.length - 1];
-  const { layerCount } = getLayeredPlayableHypothetical(currentGame);
+  const { layerCount, nextPlayables } =
+    getLayeredPlayableHypothetical(currentGame);
+  const { sequenceCount } = getSequencePlayableHypothetical(currentGame);
 
   return {
     maxScore: expectedMaxScore(currentGame),
@@ -24,6 +27,8 @@ export const generate = (history: readonly HypotheticalGame[]) => {
       currentGame.leadingMove ??
       throwT<MoveView>("Getting score for root game"),
     playableCount: layerCount,
+    sequencePlayableCount: sequenceCount,
+    nextPlayableCount: nextPlayables.length,
     misledCount: currentGame.hands.flat().filter((card) => {
       const othersPossible = new Set(card.possibles.map(hashCard));
       const intersectCount = card.ownPossibles.filter((possible) =>

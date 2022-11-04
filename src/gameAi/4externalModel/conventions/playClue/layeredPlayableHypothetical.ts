@@ -39,7 +39,7 @@ export const getLayeredPlayableHypothetical = (
   >;
   let lastMaybePlayableCardIndices: number[] = [];
   const currentMaybePlayableCardIndices = range(allHandCards.length).filter(
-    (cardIndex) => allHandCards[cardIndex].possibles.length > 0
+    (cardIndex) => allHandCards[cardIndex].ownPossibles.length > 0
   );
 
   while (
