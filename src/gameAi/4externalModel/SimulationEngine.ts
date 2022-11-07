@@ -32,11 +32,24 @@ export class SimulationEngine {
 
   public observeOthersTurn(currentGame: ImmutableGameView): SimulationEngine {
     return new SimulationEngine(
-      this.models.map((model, playerIndex) =>
-        model.observeTurn(
+      this.models.map((model, playerIndex) => {
+        const newModel = model.observeTurn(
           HypotheticalGame.fromGameView(currentGame.asView(playerIndex))
-        )
-      )
+        );
+
+        if (
+          newModel.playerIndex === currentGame.leadingMove?.targetPlayerIndex
+        ) {
+          console.log(
+            currentGame.hands[newModel.playerIndex].map((card) => [
+              card,
+              newModel.clueIntent[card.cardId],
+            ])
+          );
+        }
+
+        return newModel;
+      })
     );
   }
 

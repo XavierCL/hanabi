@@ -3,6 +3,7 @@ import ImmutableCardValue from "../../../../domain/ImmutableCardValue";
 import { hashCard } from "../../../aiUtils";
 import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
 import { ClueIntent } from "../../SingleModel";
+import { getTouchedUniquePossibles } from "../duplicates/getTouchedUniquePossibles";
 import { getHistoryFocus } from "../playClue/getHistoryFocus";
 import { getLayeredPlayableHypothetical } from "../playClue/layeredPlayableHypothetical";
 import { getDangerousCards } from "./getDangerousCards";
@@ -25,6 +26,7 @@ export const saveClue = (
 
   if (!isChop) return undefined;
 
+  const currentGame = gameHistory[gameHistory.length - 1];
   const inductionStart = gameHistory[gameHistory.length - 2];
   const targetViewOldCardFocus = oldCardFocus.asOwn();
   const { nextPlayables } = getLayeredPlayableHypothetical(inductionStart);
@@ -50,11 +52,15 @@ export const saveClue = (
     uniqBy([...nextPlayables, ...nextDangerous], hashCard)
   );
 
-  return {
-    ...oldClueIntent,
-    [cardFocus.cardId]: {
-      intent: "save",
-      possibles: restrictedCard.possibles,
+  return getTouchedUniquePossibles(
+    currentGame,
+    {
+      ...oldClueIntent,
+      [cardFocus.cardId]: {
+        intent: "save",
+        possibles: restrictedCard.ownPossibles,
+      },
     },
-  };
+    leadingClue
+  );
 };

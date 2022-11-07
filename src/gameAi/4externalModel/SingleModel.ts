@@ -17,9 +17,9 @@ export type ClueIntent = Partial<
 >;
 
 export class SingleModel {
-  private readonly playerIndex: number;
   private readonly gameHistory: readonly HypotheticalGame[];
-  private readonly clueIntent: ClueIntent;
+  public readonly playerIndex: number;
+  public readonly clueIntent: ClueIntent;
 
   constructor(
     playerIndex: number,
