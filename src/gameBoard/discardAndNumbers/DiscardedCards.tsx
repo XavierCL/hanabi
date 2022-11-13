@@ -1,6 +1,6 @@
 import _ from "lodash";
 import ImmutableCard, { CARD_COLORS } from "../../domain/ImmutableCard";
-import Card from "../Card";
+import Card from "../cards/Card";
 
 const DiscardedCards = ({
   discarded,

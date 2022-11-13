@@ -7,7 +7,7 @@ import { generate, Score } from "./scores/generate";
 import { SingleModel } from "./SingleModel";
 
 export class SimulationEngine {
-  private readonly models: readonly SingleModel[];
+  readonly models: readonly SingleModel[];
 
   public static from(
     gameHistory: readonly ImmutableGameView[],

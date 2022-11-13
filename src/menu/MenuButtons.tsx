@@ -4,10 +4,14 @@ const MenuButtons = ({
   numberOfPlayer: initialNumberOfPlayer,
   hasHuman: initialHasHuman,
   onStartGame,
+  isCheating,
+  showCheatInfo,
 }: {
   onStartGame: (numberOfPlayer: number, hasHuman: boolean) => void;
   numberOfPlayer: number;
   hasHuman: boolean;
+  isCheating: boolean;
+  showCheatInfo: () => void;
 }) => {
   const [numberOfPlayerString, setNumberOfPlayerString] = useState(
     String(initialNumberOfPlayer)
@@ -61,6 +65,14 @@ const MenuButtons = ({
         disabled={validNumberOfPlayer === undefined}
       >
         Start game
+      </button>
+      <button
+        onClick={() => {
+          showCheatInfo();
+        }}
+        disabled={isCheating}
+      >
+        Cheat info
       </button>
     </div>
   );

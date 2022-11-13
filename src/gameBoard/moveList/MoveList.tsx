@@ -1,9 +1,9 @@
 import "./MoveList.css";
-import Card from "../Card";
 import { CardColor } from "../../domain/ImmutableCard";
 import ImmutableCardView from "../../domain/ImmutableCardView";
 import { Move } from "../../domain/ImmutableGameState";
 import { useEffect, useRef } from "react";
+import Card from "../cards/Card";
 
 const MoveList = ({
   moves,

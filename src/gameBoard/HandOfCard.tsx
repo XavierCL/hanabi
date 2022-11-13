@@ -1,6 +1,6 @@
-import Card from "./Card";
 import { CardColor, CardNumber } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
+import Card from "./cards/Card";
 
 const HandOfCards = ({
   playerName,
@@ -10,6 +10,7 @@ const HandOfCards = ({
   onInteraction,
   canInteract,
   isHistoryMode,
+  showDebugInfo,
 }: {
   playerName: string;
   cards: readonly ImmutableCardView<
@@ -27,6 +28,7 @@ const HandOfCards = ({
   ) => void;
   canInteract: boolean;
   isHistoryMode: boolean;
+  showDebugInfo?: Record<string, Record<string, string>>;
 }) => (
   <div
     style={{
@@ -55,6 +57,9 @@ const HandOfCards = ({
           ownCardStatus={ownCardStatus}
           onInteraction={onInteraction}
           canInteract={canInteract}
+          showDebugInfo={
+            showDebugInfo ? showDebugInfo[card.cardId] ?? {} : undefined
+          }
         />
       ))}
     </div>

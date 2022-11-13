@@ -1,5 +1,5 @@
-import { CardColor, CardNumber } from "../domain/ImmutableCard";
-import ImmutableCardView from "../domain/ImmutableCardView";
+import { CardColor, CardNumber } from "../../domain/ImmutableCard";
+import ImmutableCardView from "../../domain/ImmutableCardView";
 import "./Card.css";
 
 const COLOR_MAP: Record<CardColor, { back: string; front: string }> = {
@@ -19,6 +19,7 @@ const Card = ({
   textShrink,
   colorStyle,
   showClues,
+  showDebugInfo,
 }: {
   card: ImmutableCardView<CardColor | undefined, number | undefined>;
   ownCardStatus: "discard-and-play" | "play" | "none";
@@ -34,6 +35,7 @@ const Card = ({
   textShrink?: number;
   colorStyle?: React.CSSProperties;
   showClues?: boolean;
+  showDebugInfo?: Record<string, string>;
 }) => {
   const { backColor, frontColor } = (() => {
     if (card.color) {
@@ -163,11 +165,25 @@ const Card = ({
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "space-evenly",
           height: "100%",
+          width: "100%",
           ...colorStyle,
         }}
       >
+        {shrink === undefined && showDebugInfo && (
+          <span style={{ display: "flex", flexDirection: "column" }}>
+            <span>{card.cardId}</span>
+            {Object.entries(showDebugInfo).map(([aiName, aiInfo]) => (
+              <span key={aiName} className="tooltip">
+                {aiName}
+                <span className="tooltiptext" style={{ whiteSpace: "pre" }}>
+                  {aiInfo}
+                </span>
+              </span>
+            ))}
+          </span>
+        )}
         <span
           style={{
             color: frontColor,

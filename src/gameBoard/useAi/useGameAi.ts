@@ -1,19 +1,23 @@
 import _ from "lodash";
 import { useCallback, useEffect, useRef } from "react";
-import ImmutableGameState, { MoveQuery } from "../domain/ImmutableGameState";
-import GameAi from "../gameAi/4externalModel/ai";
+import ImmutableGameState, { MoveQuery } from "../../domain/ImmutableGameState";
+import GameAi from "../../gameAi/4externalModel/ai";
+import { getInternalInfo } from "./getInternalInfo";
 
 const HUMAN_PLAYER_INDEX = 0;
 
 const useGameAi = (
   gameHistory: readonly ImmutableGameState[],
   hasHuman: boolean,
-  onInteraction: (move: MoveQuery) => void
+  onInteraction: (move: MoveQuery) => void,
+  infoHistoryIndex: number | undefined,
+  aiNames: string[]
 ): {
   simulateMove: (
     currentGame: readonly ImmutableGameState[],
     knownLeadingMove: MoveQuery
   ) => void;
+  internalInfo?: Record<string, Record<string, string>>;
 } => {
   const currentGame = gameHistory[gameHistory.length - 1];
 
@@ -115,7 +119,23 @@ const useGameAi = (
     }, 0);
   });
 
-  return { simulateMove: computeMove };
+  return {
+    simulateMove: computeMove,
+    internalInfo:
+      infoHistoryIndex === undefined
+        ? undefined
+        : getInternalInfo(
+            gameAis.map(
+              (aiHistory) =>
+                aiHistory[
+                  infoHistoryIndex === -1
+                    ? aiHistory.length - 1
+                    : infoHistoryIndex
+                ]
+            ),
+            aiNames
+          ),
+  };
 };
 
 export default useGameAi;

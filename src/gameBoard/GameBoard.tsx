@@ -8,16 +8,18 @@ import DiscardAndNumbers from "./discardAndNumbers/DiscardAndNumbers";
 import HandOfCard from "./HandOfCard";
 import MoveList from "./moveList/MoveList";
 import PlayedCards from "./PlayedCards";
-import useGameAi from "./useGameAi";
+import useGameAi from "./useAi/useGameAi";
 
 const HUMAN_PLAYER_INDEX = 0;
 
 const GameBoard = ({
   numberOfPlayer,
   hasHuman,
+  isCheating,
 }: {
   numberOfPlayer: number;
   hasHuman: boolean;
+  isCheating: boolean;
 }) => {
   const [gameHistory, setGameHistory] = useState({
     history: [ImmutableGameState.from(numberOfPlayer)],
@@ -55,20 +57,21 @@ const GameBoard = ({
     }));
   };
 
-  const playerNames = [
-    ...(hasHuman ? ["Human"] : []),
-    ..._.range(numberOfPlayer - Number(hasHuman)).map(
-      (aiIndex) => `AI ${aiIndex}`
-    ),
-  ];
+  const aiNames = _.range(numberOfPlayer - Number(hasHuman)).map(
+    (aiIndex) => `AI ${aiIndex}`
+  );
+
+  const playerNames = [...(hasHuman ? ["Human"] : []), ...aiNames];
 
   const isHumanTurn =
     hasHuman && currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
 
-  const { simulateMove } = useGameAi(
+  const { simulateMove, internalInfo } = useGameAi(
     gameHistory.history,
     hasHuman,
-    onInteraction
+    onInteraction,
+    isCheating ? gameHistory.seenIndex : undefined,
+    aiNames
   );
 
   return (
@@ -141,6 +144,7 @@ const GameBoard = ({
               playerName={playerName}
               cards={cards}
               isCurrentTurn={isCurrentTurn}
+              showDebugInfo={internalInfo}
               ownCardStatus={(() => {
                 if (!isHuman) return "none";
 

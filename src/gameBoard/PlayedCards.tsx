@@ -1,7 +1,7 @@
-import Card from "./Card";
 import { CardColor, CardNumber, CARD_COLORS } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import ImmutableGameState from "../domain/ImmutableGameState";
+import Card from "./cards/Card";
 
 const PlayedCards = ({ currentGame }: { currentGame: ImmutableGameState }) => (
   <div

@@ -2,7 +2,7 @@ import ImmutableCardView from "../../domain/ImmutableCardView";
 import ImmutableGameState, {
   MAXIMUM_LIVES,
 } from "../../domain/ImmutableGameState";
-import Card from "../Card";
+import Card from "../cards/Card";
 
 const GameNumberInfo = ({
   currentGame,
