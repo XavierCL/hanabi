@@ -30,6 +30,7 @@ export const getTouchedUniquePossibles = (
         touched
           .filter((t) => t.cardId !== card.cardId)
           // Only taking certain own cards, since otherwise this is exponential mess sudoku
+          // Todo visit other touched in focus order, and detect useless total count
           .filter((t) => t.ownPossibles.length === 1)
           .map((t) => t.ownPossibles[0])
           .map(hashCard)
@@ -44,7 +45,6 @@ export const getTouchedUniquePossibles = (
     })
   );
 
-  // todo remove duplicate from score
   // todo add third card set to hypothetical card, being conventionless ownPossibles
   // Allow duplicates if conventionless points to useless card
   // E.g. pointing to 1s if that is the last one to play

@@ -1,5 +1,10 @@
-import { mean, sumBy } from "lodash";
-import { CARD_COLORS } from "../../../domain/ImmutableCard";
+import { max, mean, range, sumBy } from "lodash";
+import {
+  CardColor,
+  CardNumber,
+  CARD_COLORS,
+} from "../../../domain/ImmutableCard";
+import ImmutableCardValue from "../../../domain/ImmutableCardValue";
 import { MoveView } from "../../../domain/ImmutableGameView";
 import { getChop, hashCard, throwT } from "../../aiUtils";
 import { getLayeredPlayableHypothetical } from "../conventions/playClue/layeredPlayableHypothetical";
@@ -29,6 +34,7 @@ export const generate = (history: readonly HypotheticalGame[]) => {
     playableCount: layerCount,
     sequencePlayableCount: sequenceCount,
     nextPlayableCount: nextPlayables.length,
+    // todo only count as misled if card is still useful
     misledCount: currentGame.hands.flat().filter((card) => {
       const othersPossible = new Set(card.possibles.map(hashCard));
       const intersectCount = card.ownPossibles.filter((possible) =>
@@ -45,6 +51,41 @@ export const generate = (history: readonly HypotheticalGame[]) => {
 
       return intersectCount === 0 && card.ownPossibles.length > 0;
     }).length,
+    duplicatedCount: (() => {
+      const countByTouched: Record<string, number> = {};
+
+      currentGame.hands
+        .flat()
+        .filter((card) => card.isClued())
+        // Using possibles instead of own possibles
+        // Since this uses maximum information to prevent duplications
+        // In case of own cards, don't clue other's card that could be the same
+        // In case of other's card, allow clues that they don't know is not a duplication
+        .flatMap((card) => card.possibles)
+        .forEach((card) => {
+          if (!(hashCard(card) in countByTouched)) {
+            countByTouched[hashCard(card)] = 0;
+          }
+
+          ++countByTouched[hashCard(card)];
+        });
+
+      Object.entries(currentGame.playedCards)
+        .flatMap(([color, numbers]) =>
+          range(1, Math.max(...numbers) + 1).map(
+            (n) => new ImmutableCardValue(color as CardColor, n as CardNumber)
+          )
+        )
+        .forEach((card) => {
+          if (!(hashCard(card) in countByTouched)) {
+            countByTouched[hashCard(card)] = 0;
+          }
+
+          ++countByTouched[hashCard(card)];
+        });
+
+      return Object.values(countByTouched).filter((count) => count > 1).length;
+    })(),
     hasImproperDiscard: (() => {
       if (!currentGame.leadingMove) return 0;
 

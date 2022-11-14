@@ -32,28 +32,14 @@ export class SimulationEngine {
 
   public observeOthersTurn(currentGame: ImmutableGameView): SimulationEngine {
     return new SimulationEngine(
-      this.models.map((model, playerIndex) => {
-        const newModel = model.observeTurn(
+      this.models.map((model, playerIndex) =>
+        model.observeTurn(
           HypotheticalGame.fromGameView(currentGame.asView(playerIndex))
-        );
-
-        if (
-          newModel.playerIndex === currentGame.leadingMove?.targetPlayerIndex
-        ) {
-          console.log(
-            currentGame.hands[newModel.playerIndex].map((card) => [
-              card,
-              newModel.clueIntent[card.cardId],
-            ])
-          );
-        }
-
-        return newModel;
-      })
+        )
+      )
     );
   }
 
-  // todo make sure discount initialization works and is only computed from game not from ai
   public playOwnTurn(currentGame: ImmutableGameView): MoveQuery {
     const legalMoves = shuffle(currentGame.getLegalMoves());
 

@@ -9,6 +9,7 @@ export const firstIsBest = (first: Score, second: Score): boolean => {
     -score.hasImproperDiscard,
     score.maxScore,
     score.totalPlayed,
+    -score.duplicatedCount,
     score.sequencePlayableCount,
     score.playableCount,
     score.nextPlayableCount,

@@ -1,8 +1,12 @@
-import { mapValues } from "lodash";
 import { MoveQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView from "../../domain/ImmutableGameView";
 import { AbstractAi } from "../AbstractAi";
 import { SimulationEngine } from "./SimulationEngine";
+
+// Todo
+// 1. Finnesses
+// 1. Outgoing cards should be considered as unique as well
+// 1. Score.next nothing to play discard dangerous
 
 export default class GameAi implements AbstractAi {
   readonly engine: SimulationEngine | undefined;
@@ -34,8 +38,15 @@ export default class GameAi implements AbstractAi {
   getInternalInfo(): Record<string, string> | undefined {
     if (!this.engine) return undefined;
 
-    return mapValues(this.engine?.models[0].clueIntent, (intent) =>
-      JSON.stringify(intent, null, 2)
+    return Object.fromEntries(
+      this.engine.models.flatMap((model, modelIndex) =>
+        model.gameHistory[model.gameHistory.length - 1].hands[modelIndex]
+          .filter((card) => card.cardId in model.clueIntent)
+          .map((card) => [
+            card.cardId,
+            JSON.stringify(model.clueIntent[card.cardId], null, 2),
+          ])
+      )
     );
   }
 }

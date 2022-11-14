@@ -14,14 +14,13 @@ export const getKnownCards = (
     .flat()
     .filter((card) => card.isClued())
     .filter((card) => !ignoredCardIdSet.has(card.cardId))
-    .flatMap((card) => card.ownPossibles);
+    .filter((card) => card.possibles.length === 1)
+    .map((card) => card.possibles[0]);
 
   const playedTouched = Object.entries(game.playedCards).flatMap(
     ([color, numbers]) =>
-      numbers.flatMap((number) =>
-        range(1, number + 1).map(
-          (n) => new ImmutableCardValue(color as CardColor, n as CardNumber)
-        )
+      range(1, Math.max(...numbers) + 1).map(
+        (n) => new ImmutableCardValue(color as CardColor, n as CardNumber)
       )
   );
 

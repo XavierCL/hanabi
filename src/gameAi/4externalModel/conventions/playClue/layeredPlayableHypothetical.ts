@@ -32,7 +32,6 @@ export const getLayeredPlayableHypothetical = (
 
   let totalLayerCount = 0;
 
-  // Should go card by card, not color by color, because some cards we don't know the color but are still playable on two colors
   const layedPlayedCards = clone(game.playedCards) as Record<
     CardColor,
     (CardNumber | 0)[]

@@ -1,5 +1,6 @@
 import { mapValues, pick } from "lodash";
 import ImmutableCardValue from "../../domain/ImmutableCardValue";
+import { getPossibleOwnCards } from "../aiUtils";
 import { playClue } from "./conventions/playClue/playClue";
 import { saveClue } from "./conventions/saveClue/saveClue";
 import { HypotheticalGame } from "./hypothetical/HypotheticalGame";
@@ -17,7 +18,7 @@ export type ClueIntent = Partial<
 >;
 
 export class SingleModel {
-  private readonly gameHistory: readonly HypotheticalGame[];
+  public readonly gameHistory: readonly HypotheticalGame[];
   public readonly playerIndex: number;
   public readonly clueIntent: ClueIntent;
 
