@@ -34,7 +34,7 @@ const useGameAi = (
     hasHuman && currentGame.currentTurnPlayerIndex === HUMAN_PLAYER_INDEX;
 
   const observeLastMove = useCallback(
-    (simHistory: readonly ImmutableGameState[]) => {
+    (simHistory: readonly ImmutableGameState[]): GameAi[] => {
       return gameAis.map((gameAi, aiIndex) => {
         const playerIndex = aiIndex + Number(hasHuman);
 
@@ -70,7 +70,10 @@ const useGameAi = (
           simHistory.length - 1
         ];
 
-      return currentGameAi.playOwnTurn(currentAiHistoryView);
+      return currentGameAi.playOwnTurn(
+        currentAiHistoryView,
+        Boolean(knownLeadingMove)
+      );
     })();
 
     // This is a fake simulation, fake observation as well

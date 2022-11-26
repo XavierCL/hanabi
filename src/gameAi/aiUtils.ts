@@ -341,10 +341,7 @@ export const getPossibleOwnCards = (
 export const getChop = (hand: OwnHand) => {
   const chopIndex =
     hand.length -
-    hand
-      .slice()
-      .reverse()
-      .findIndex((card) => !card.colorClued && !card.numberClued) -
+    reverse(hand).findIndex((card) => !card.colorClued && !card.numberClued) -
     1;
 
   if (chopIndex === hand.length) {
@@ -481,3 +478,5 @@ export const getFocus = (
 export const throwT = <T>(message: string): T => {
   throw new Error(message);
 };
+
+export const reverse = <T>(array: readonly T[]): T[] => array.slice().reverse();

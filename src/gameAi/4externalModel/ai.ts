@@ -4,11 +4,7 @@ import { AbstractAi } from "../AbstractAi";
 import { SimulationEngine } from "./SimulationEngine";
 
 // Todo
-// 1. generate score from fast play
-// 1. Add observe discards and play clues no duplicate
 // 1. Finnesses
-// 1. Outgoing cards should be considered as unique as well
-// 1. Score.next nothing to play discard dangerous
 
 export default class GameAi implements AbstractAi {
   readonly engine: SimulationEngine | undefined;
@@ -26,11 +22,14 @@ export default class GameAi implements AbstractAi {
     );
   }
 
-  playOwnTurn(gameHistory: readonly ImmutableGameView[]): MoveQuery {
+  playOwnTurn(
+    gameHistory: readonly ImmutableGameView[],
+    isReplay?: boolean
+  ): MoveQuery {
     return this.self(
       gameHistory,
       gameHistory[gameHistory.length - 1].hands.length
-    ).playOwnTurn(gameHistory[gameHistory.length - 1]);
+    ).playOwnTurn(gameHistory[gameHistory.length - 1], isReplay ?? false);
   }
 
   private self(gameHistory: readonly ImmutableGameView[], playerCount: number) {

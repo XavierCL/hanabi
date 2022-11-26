@@ -9,6 +9,7 @@ import {
   getPlayableCards,
   getPossibleOwnCards,
   PossibleCards,
+  reverse,
 } from "./aiUtils";
 
 // average score: 16 <= 21
@@ -205,9 +206,9 @@ const getOwnKnownUselessCard = (
 const getOwnUntouched = (
   currentGame: ImmutableGameView
 ): MoveQuery | undefined => {
-  const discardCandidate = currentGame.hands[currentGame.currentTurnPlayerIndex]
-    .slice()
-    .reverse();
+  const discardCandidate = reverse(
+    currentGame.hands[currentGame.currentTurnPlayerIndex]
+  );
 
   return {
     targetPlayerIndex: currentGame.currentTurnPlayerIndex,

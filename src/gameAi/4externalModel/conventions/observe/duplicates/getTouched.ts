@@ -1,7 +1,7 @@
-import { CardColor, CardNumber } from "../../../../domain/ImmutableCard";
-import { ClueQuery } from "../../../../domain/ImmutableGameState";
-import HypotheticalCard from "../../hypothetical/HypotheticalCard";
-import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
+import { CardColor, CardNumber } from "../../../../../domain/ImmutableCard";
+import { ClueQuery } from "../../../../../domain/ImmutableGameState";
+import HypotheticalCard from "../../../hypothetical/HypotheticalCard";
+import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 
 export const getTouched = (
   newGame: HypotheticalGame,

@@ -1,7 +1,7 @@
-import { CARD_COLORS, CARD_NUMBERS } from "../../../../domain/ImmutableCard";
-import ImmutableCardValue from "../../../../domain/ImmutableCardValue";
-import { hashCard } from "../../../aiUtils";
-import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
+import { CARD_COLORS, CARD_NUMBERS } from "../../../../../domain/ImmutableCard";
+import ImmutableCardValue from "../../../../../domain/ImmutableCardValue";
+import { hashCard } from "../../../../aiUtils";
+import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 
 export const getDangerousCards = (
   currentGame: HypotheticalGame,

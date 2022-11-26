@@ -1,8 +1,12 @@
 import { mapValues, pick } from "lodash";
 import ImmutableCardValue from "../../domain/ImmutableCardValue";
-import { getPossibleOwnCards } from "../aiUtils";
-import { playClue } from "./conventions/playClue/playClue";
-import { saveClue } from "./conventions/saveClue/saveClue";
+import { ActionQuery } from "../../domain/ImmutableGameState";
+import { discardOldestUntouched } from "./conventions/fastPlay/discardOldestUntouched";
+import { discardUseless } from "./conventions/fastPlay/discardUseless/discardUseless";
+import { playCard } from "./conventions/fastPlay/playCard/playCard";
+import { observeDuplication as observeDuplications } from "./conventions/observe/observeDuplication";
+import { playClue } from "./conventions/observe/playClue/playClue";
+import { saveClue } from "./conventions/observe/saveClue/saveClue";
 import { HypotheticalGame } from "./hypothetical/HypotheticalGame";
 
 export type ClueIntent = Partial<
@@ -52,23 +56,21 @@ export class SingleModel {
   }
 
   public observeTurn(nextTurn: HypotheticalGame): SingleModel {
-    const conventions = [saveClue, playClue];
+    const conventions = [observeDuplications, saveClue, playClue];
     const restrictedNextTurn = nextTurn.restrictPossibles(
       this.restrictedPossibles(false)
     );
     const gameHistory = [...this.gameHistory, restrictedNextTurn];
 
-    const updatedIntent = (() => {
-      for (const convention of conventions) {
-        const maybeIntent = convention(gameHistory, this.clueIntent);
+    let updatedIntent = this.clueIntent;
+    for (const convention of conventions) {
+      const conventionResult = convention(gameHistory, this.clueIntent);
+      updatedIntent = conventionResult.intents ?? updatedIntent;
 
-        if (maybeIntent) return maybeIntent;
-      }
+      if (!conventionResult.passThrough) break;
+    }
 
-      return undefined;
-    })();
-
-    return this.fromNextGameHistory(nextTurn, updatedIntent ?? this.clueIntent);
+    return this.fromNextGameHistory(nextTurn, updatedIntent);
   }
 
   public restrictedPossibles(
@@ -84,5 +86,30 @@ export class SingleModel {
       : this.clueIntent;
 
     return mapValues(shownClues, (intent) => intent?.possibles);
+  }
+
+  fastPlay(currentGame: HypotheticalGame): ActionQuery | undefined {
+    const ownHand = currentGame.hands[this.playerIndex];
+
+    if (ownHand.length === 0) return undefined;
+
+    const conventions = [playCard, discardUseless, discardOldestUntouched];
+
+    for (const convention of conventions) {
+      const move = convention(currentGame, this.playerIndex);
+
+      if (move) return move;
+    }
+
+    // fall back discard oldest
+    return {
+      targetPlayerIndex: this.playerIndex,
+      interaction: {
+        discard:
+          currentGame.hands[this.playerIndex][
+            currentGame.hands[this.playerIndex].length - 1
+          ].cardId,
+      },
+    };
   }
 }

@@ -4,15 +4,13 @@ import { Score } from "./generate";
 export const firstIsBest = (first: Score, second: Score): boolean => {
   const prepareScore = (score: Score) => [
     score.remainingLives,
-    -score.misplayCount,
     -score.misledCount,
-    -score.hasImproperDiscard,
     score.maxScore,
     score.totalPlayed,
-    -score.duplicatedCount,
-    score.sequencePlayableCount,
-    score.playableCount,
+    -score.playDiscount,
+    score.dangerousDiscardDiscount,
     score.nextPlayableCount,
+    score.totalPossibleCount,
   ];
 
   for (const [firstQuantity, secondQuantity] of zip(

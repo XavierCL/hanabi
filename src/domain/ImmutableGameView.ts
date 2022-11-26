@@ -33,6 +33,7 @@ export default class ImmutableGameView {
     CardColor | undefined,
     CardNumber | undefined
   >[])[];
+  readonly currentTurn: number;
   readonly currentTurnPlayerIndex: number;
   readonly playedCards: Readonly<Record<CardColor, CardNumber | 0>>;
   readonly fullDeck: readonly ImmutableCardValue[];
@@ -46,6 +47,7 @@ export default class ImmutableGameView {
       CardColor | undefined,
       CardNumber | undefined
     >[])[],
+    currentTurn: number,
     currentTurnPlayerIndex: number,
     playedCards: Readonly<Record<CardColor, CardNumber | 0>>,
     fullDeck: readonly ImmutableCardValue[],
@@ -55,6 +57,7 @@ export default class ImmutableGameView {
   ) {
     this.remainingClues = remainingClues;
     this.hands = hands;
+    this.currentTurn = currentTurn;
     this.currentTurnPlayerIndex = currentTurnPlayerIndex;
     this.playedCards = playedCards;
     this.fullDeck = fullDeck;
@@ -149,6 +152,7 @@ export default class ImmutableGameView {
           ? hand.map((card) => card.asOwn())
           : hand.map((card) => card.asOthers())
       ),
+      this.currentTurn,
       this.currentTurnPlayerIndex,
       this.playedCards,
       this.fullDeck,

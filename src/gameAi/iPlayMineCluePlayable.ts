@@ -3,7 +3,12 @@ import { CardColor, CardNumber } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView from "../domain/ImmutableGameView";
-import { fallbackMove, getCardUsefulness, getPlayableCards } from "./aiUtils";
+import {
+  fallbackMove,
+  getCardUsefulness,
+  getPlayableCards,
+  reverse,
+} from "./aiUtils";
 
 /*
 Ideas:
@@ -193,9 +198,9 @@ const getOwnKnownUselessCard = (
 const getOwnUntouched = (
   currentGame: ImmutableGameView
 ): MoveQuery | undefined => {
-  const discardCandidate = currentGame.hands[currentGame.currentTurnPlayerIndex]
-    .slice()
-    .reverse();
+  const discardCandidate = reverse(
+    currentGame.hands[currentGame.currentTurnPlayerIndex]
+  );
 
   return {
     targetPlayerIndex: currentGame.currentTurnPlayerIndex,

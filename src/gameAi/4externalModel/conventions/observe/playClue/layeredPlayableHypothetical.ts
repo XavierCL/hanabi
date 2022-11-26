@@ -1,13 +1,16 @@
-import { clone, groupBy, isEqual, mapValues, range } from "lodash";
+import { mapValues, groupBy, clone, range, isEqual } from "lodash";
 import {
   CardColor,
   CardNumber,
   CARD_NUMBERS,
-} from "../../../../domain/ImmutableCard";
-import ImmutableCardValue from "../../../../domain/ImmutableCardValue";
-import { hashCard } from "../../../aiUtils";
-import HypotheticalCard from "../../hypothetical/HypotheticalCard";
-import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
+} from "../../../../../domain/ImmutableCard";
+import ImmutableCardValue from "../../../../../domain/ImmutableCardValue";
+import { hashCard } from "../../../../aiUtils";
+import HypotheticalCard from "../../../hypothetical/HypotheticalCard";
+import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
+
+// Using possibles here because we know about third parties cards
+// And the game has been asViewed to clue giver and receiver at this point.
 
 export const getLayeredPlayableHypothetical = (
   game: HypotheticalGame
@@ -38,7 +41,7 @@ export const getLayeredPlayableHypothetical = (
   >;
   let lastMaybePlayableCardIndices: number[] = [];
   const currentMaybePlayableCardIndices = range(allHandCards.length).filter(
-    (cardIndex) => allHandCards[cardIndex].ownPossibles.length > 0
+    (cardIndex) => allHandCards[cardIndex].possibles.length > 0
   );
 
   while (
@@ -51,23 +54,23 @@ export const getLayeredPlayableHypothetical = (
       const maybePlayableCard = allHandCards[maybePlayableCardIndex];
 
       if (
-        maybePlayableCard.ownPossibles.every(
+        maybePlayableCard.possibles.every(
           (possible) =>
             layedPlayedCards[possible.color].length === 1 &&
             layedPlayedCards[possible.color][0] + 1 === possible.number
         )
       ) {
-        totalLayerCount = (1 + 1 / maybePlayableCard.ownPossibles.length) / 2;
+        totalLayerCount = (1 + 1 / maybePlayableCard.possibles.length) / 2;
         currentMaybePlayableCardIndices.splice(
           currentMaybePlayableCardIndices.indexOf(maybePlayableCardIndex),
           1
         );
 
-        if (maybePlayableCard.ownPossibles.length === 1) {
-          const possible = maybePlayableCard.ownPossibles[0];
+        if (maybePlayableCard.possibles.length === 1) {
+          const possible = maybePlayableCard.possibles[0];
           layedPlayedCards[possible.color] = [possible.number];
         } else {
-          maybePlayableCard.ownPossibles.forEach(
+          maybePlayableCard.possibles.forEach(
             (possible) =>
               (layedPlayedCards[possible.color] = [
                 ...layedPlayedCards[possible.color],

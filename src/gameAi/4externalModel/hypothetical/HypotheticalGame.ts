@@ -7,10 +7,24 @@ import {
 } from "../../../domain/ImmutableCard";
 import ImmutableCardValue from "../../../domain/ImmutableCardValue";
 import ImmutableCardView from "../../../domain/ImmutableCardView";
-import { RemainingClues, MoveQuery } from "../../../domain/ImmutableGameState";
-import ImmutableGameView, { MoveView } from "../../../domain/ImmutableGameView";
+import { MoveQuery, RemainingClues } from "../../../domain/ImmutableGameState";
+import ImmutableGameView from "../../../domain/ImmutableGameView";
 import { getPossibleOwnCards } from "../../aiUtils";
 import HypotheticalCard from "./HypotheticalCard";
+
+export type HypotheticalMove = {
+  targetPlayerIndex: number;
+  interaction:
+    | { color: CardColor }
+    | { number: CardNumber }
+    | { play: HypotheticalCard<CardColor | undefined, CardNumber | undefined> }
+    | {
+        discard: HypotheticalCard<
+          CardColor | undefined,
+          CardNumber | undefined
+        >;
+      };
+};
 
 export class HypotheticalGame {
   readonly remainingClues: RemainingClues;
@@ -18,6 +32,7 @@ export class HypotheticalGame {
     CardColor | undefined,
     CardNumber | undefined
   >[])[];
+  readonly currentTurn: number;
   readonly currentTurnPlayerIndex: number;
   readonly playedCards: Readonly<Record<CardColor, (CardNumber | 0)[]>>;
   readonly fullDeck: readonly ImmutableCardValue[];
@@ -26,7 +41,9 @@ export class HypotheticalGame {
     CardNumber | undefined
   >[];
   readonly remainingLives: number;
-  readonly leadingMove: MoveView | undefined;
+  readonly leadingMove: HypotheticalMove | undefined;
+  readonly playIntegral: number;
+  readonly discardTurns: Record<string, number>;
 
   public static fromGameView(gameView: ImmutableGameView) {
     const possibles = Object.fromEntries(
@@ -53,21 +70,46 @@ export class HypotheticalGame {
       );
     };
 
+    const knownCardToHypothetical = (
+      card: ImmutableCardView<CardColor, CardNumber>
+    ) =>
+      HypotheticalCard.fromCardView(
+        card,
+        [new ImmutableCardValue(card.color, card.number)],
+        [new ImmutableCardValue(card.color, card.number)]
+      );
+
+    const leadingMoveInteraction = gameView.leadingMove?.interaction;
+
     return new HypotheticalGame(
       gameView.remainingClues,
       gameView.hands.map((hand) => hand.map(makeYourCardComeTrue)),
+      gameView.currentTurn,
       gameView.currentTurnPlayerIndex,
       mapValues(gameView.playedCards, (number) => [number]),
       gameView.fullDeck,
-      gameView.discarded.map((card) =>
-        HypotheticalCard.fromCardView(
-          card,
-          [new ImmutableCardValue(card.color, card.number)],
-          [new ImmutableCardValue(card.color, card.number)]
-        )
-      ),
+      gameView.discarded.map(knownCardToHypothetical),
       gameView.remainingLives,
-      gameView.leadingMove
+      gameView.leadingMove && leadingMoveInteraction
+        ? {
+            targetPlayerIndex: gameView.leadingMove.targetPlayerIndex,
+            interaction:
+              "number" in leadingMoveInteraction ||
+              "color" in leadingMoveInteraction
+                ? leadingMoveInteraction
+                : "discard" in leadingMoveInteraction
+                ? {
+                    discard: knownCardToHypothetical(
+                      leadingMoveInteraction.discard
+                    ),
+                  }
+                : {
+                    play: knownCardToHypothetical(leadingMoveInteraction.play),
+                  },
+          }
+        : undefined,
+      0,
+      {}
     );
   }
 
@@ -77,6 +119,7 @@ export class HypotheticalGame {
       CardColor | undefined,
       CardNumber | undefined
     >[])[],
+    currentTurn: number,
     currentTurnPlayerIndex: number,
     playedCards: Readonly<Record<CardColor, (CardNumber | 0)[]>>,
     fullDeck: readonly ImmutableCardValue[],
@@ -85,16 +128,21 @@ export class HypotheticalGame {
       CardNumber | undefined
     >[],
     remainingLives: number,
-    leadingMove: MoveView | undefined
+    leadingMove: HypotheticalMove | undefined,
+    playIntegral: number,
+    discardTurns: Record<string, number>
   ) {
     this.remainingClues = remainingClues;
     this.hands = hands;
+    this.currentTurn = currentTurn;
     this.currentTurnPlayerIndex = currentTurnPlayerIndex;
     this.playedCards = playedCards;
     this.fullDeck = fullDeck;
     this.discarded = discarded;
     this.remainingLives = remainingLives;
     this.leadingMove = leadingMove;
+    this.playIntegral = playIntegral;
+    this.discardTurns = discardTurns;
   }
 
   canDiscard(): boolean {
@@ -183,12 +231,15 @@ export class HypotheticalGame {
           ? hand.map((card) => card.asOwn())
           : hand.map((card) => card.asOthers())
       ),
+      this.currentTurn,
       this.currentTurnPlayerIndex,
       this.playedCards,
       this.fullDeck,
       this.discarded,
       this.remainingLives,
-      this.leadingMove
+      this.leadingMove,
+      this.playIntegral,
+      this.discardTurns
     );
   }
 
@@ -216,17 +267,40 @@ export class HypotheticalGame {
     return new HypotheticalGame(
       this.remainingClues,
       this.hands.map((hand) => hand.map(restrictCard)),
+      this.currentTurn,
       this.currentTurnPlayerIndex,
       this.playedCards,
       this.fullDeck,
       this.discarded.map(restrictCard),
       this.remainingLives,
-      this.leadingMove
+      this.leadingMove,
+      this.playIntegral,
+      this.discardTurns
     );
   }
 
-  playInteraction(moveQuery: MoveQuery): HypotheticalGame {
+  skipTurn(): HypotheticalGame {
+    return new HypotheticalGame(
+      this.remainingClues,
+      this.hands,
+      this.currentTurn + 1,
+      (this.currentTurnPlayerIndex + 1) % this.hands.length,
+      this.playedCards,
+      this.fullDeck,
+      this.discarded,
+      this.remainingLives,
+      this.leadingMove,
+      this.playIntegral,
+      this.discardTurns
+    );
+  }
+
+  playInteraction(
+    moveQuery: MoveQuery,
+    ignoreIllegal: boolean = false
+  ): HypotheticalGame {
     if (
+      !ignoreIllegal &&
       this.getLegalMoves().every((legalMove) => !isEqual(legalMove, moveQuery))
     ) {
       throw new Error("Simulated non legal move");
@@ -344,7 +418,7 @@ export class HypotheticalGame {
       return playCard(hand, interaction.play);
     });
 
-    const move = ((): MoveView => {
+    const move = ((): HypotheticalMove => {
       const moveQueryInteraction = moveQuery.interaction;
 
       if ("color" in moveQueryInteraction || "number" in moveQueryInteraction) {
@@ -386,12 +460,21 @@ export class HypotheticalGame {
     return new HypotheticalGame(
       remainingClues,
       newHands,
+      this.currentTurn + 1,
       (this.currentTurnPlayerIndex + 1) % this.hands.length,
       newPlayed,
       this.fullDeck,
       discarded,
       remainingLives,
-      move
+      move,
+      this.playIntegral +
+        Number("play" in moveQuery.interaction) * this.currentTurn,
+      {
+        ...this.discardTurns,
+        ...("discard" in move.interaction && {
+          [move.interaction.discard.cardId]: this.currentTurn,
+        }),
+      }
     );
   }
 }

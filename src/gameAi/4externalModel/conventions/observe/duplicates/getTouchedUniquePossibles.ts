@@ -1,8 +1,8 @@
 import { mapValues } from "lodash";
-import { ClueQuery } from "../../../../domain/ImmutableGameState";
-import { hashCard } from "../../../aiUtils";
-import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
-import { ClueIntent } from "../../SingleModel";
+import { ClueQuery } from "../../../../../domain/ImmutableGameState";
+import { hashCard } from "../../../../aiUtils";
+import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
+import { ClueIntent } from "../../../SingleModel";
 import { getKnownCards } from "./getKnownCards";
 import { getTouched } from "./getTouched";
 

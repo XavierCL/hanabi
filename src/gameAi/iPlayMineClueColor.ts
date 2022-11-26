@@ -3,6 +3,7 @@ import { CardColor, CardNumber } from "../domain/ImmutableCard";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView from "../domain/ImmutableGameView";
+import { reverse } from "./aiUtils";
 
 export default class GameAi {
   observeOthersTurn(gameHistory: readonly ImmutableGameView[]): void {}
@@ -140,7 +141,7 @@ export default class GameAi {
     }
 
     if (currentGame.canDiscard()) {
-      const discardCandidate = ownCards.slice().reverse();
+      const discardCandidate = reverse(ownCards);
 
       return {
         targetPlayerIndex: currentGame.currentTurnPlayerIndex,

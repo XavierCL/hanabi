@@ -346,6 +346,7 @@ export default class ImmutableGameState {
       this.hands.map((hand, handIndex) =>
         handIndex === playerIndex ? hand.asOwn() : hand.asOthers()
       ),
+      this.turnCount,
       this.currentTurnPlayerIndex,
       this.playedCards,
       this.fullDeckView,

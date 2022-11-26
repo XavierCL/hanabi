@@ -16,6 +16,7 @@ import {
   getSingletonCards,
   hashCard,
   PossibleCards,
+  reverse,
 } from "../aiUtils";
 import getTempoClue from "./tempoMove";
 
@@ -412,9 +413,9 @@ const getOwnKnownUselessCard = (
 const getOwnUntouched = (
   currentGame: ImmutableGameView
 ): MoveQuery | undefined => {
-  const discardCandidate = currentGame.hands[currentGame.currentTurnPlayerIndex]
-    .slice()
-    .reverse();
+  const discardCandidate = reverse(
+    currentGame.hands[currentGame.currentTurnPlayerIndex]
+  );
 
   return {
     targetPlayerIndex: currentGame.currentTurnPlayerIndex,

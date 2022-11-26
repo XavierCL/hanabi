@@ -1,8 +1,8 @@
 import { range, uniqBy } from "lodash";
-import { CardColor, CardNumber } from "../../../../domain/ImmutableCard";
-import ImmutableCardValue from "../../../../domain/ImmutableCardValue";
-import { hashCard } from "../../../aiUtils";
-import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
+import { CardColor, CardNumber } from "../../../../../domain/ImmutableCard";
+import ImmutableCardValue from "../../../../../domain/ImmutableCardValue";
+import { hashCard } from "../../../../aiUtils";
+import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 
 export const getKnownCards = (
   game: HypotheticalGame,
