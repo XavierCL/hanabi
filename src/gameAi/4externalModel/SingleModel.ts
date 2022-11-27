@@ -4,6 +4,7 @@ import { ActionQuery } from "../../domain/ImmutableGameState";
 import { discardOldestUntouched } from "./conventions/fastPlay/discardOldestUntouched";
 import { discardUseless } from "./conventions/fastPlay/discardUseless/discardUseless";
 import { playCard } from "./conventions/fastPlay/playCard/playCard";
+import { earlyGame5Save } from "./conventions/observe/earlyGame5Save";
 import { observeDuplication as observeDuplications } from "./conventions/observe/observeDuplication";
 import { playClue } from "./conventions/observe/playClue/playClue";
 import { saveClue } from "./conventions/observe/saveClue/saveClue";
@@ -56,7 +57,12 @@ export class SingleModel {
   }
 
   public observeTurn(nextTurn: HypotheticalGame): SingleModel {
-    const conventions = [observeDuplications, saveClue, playClue];
+    const conventions = [
+      observeDuplications,
+      earlyGame5Save,
+      saveClue,
+      playClue,
+    ];
     const restrictedNextTurn = nextTurn.restrictPossibles(
       this.restrictedPossibles(false)
     );
@@ -102,14 +108,6 @@ export class SingleModel {
     }
 
     // fall back discard oldest
-    return {
-      targetPlayerIndex: this.playerIndex,
-      interaction: {
-        discard:
-          currentGame.hands[this.playerIndex][
-            currentGame.hands[this.playerIndex].length - 1
-          ].cardId,
-      },
-    };
+    return undefined;
   }
 }

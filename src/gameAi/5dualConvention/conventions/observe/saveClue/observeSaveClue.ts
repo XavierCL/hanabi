@@ -2,16 +2,16 @@ import { uniqBy } from "lodash";
 import ImmutableCardValue from "../../../../../domain/ImmutableCardValue";
 import { hashCard } from "../../../../aiUtils";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
-import { ClueIntent } from "../../../SingleModel";
+import { ClueIntents } from "../../../ai";
 import { getTouchedUniquePossibles } from "../duplicates/getTouchedUniquePossibles";
 import { getHistoryFocus } from "../playClue/getHistoryFocus";
 import { getLayeredPlayableHypothetical } from "../playClue/layeredPlayableHypothetical";
-import { getDangerousUnknownOwnCards } from "./getDangerousUnknownOwnCards";
+import { getDangerousCards } from "./getDangerousCards";
 
-export const saveClue = (
+export const observeSaveClue = (
   gameHistory: readonly HypotheticalGame[],
-  oldClueIntent: ClueIntent
-): { intents?: ClueIntent; passThrough: boolean } => {
+  oldClueIntent: ClueIntents
+): { intents?: ClueIntents; passThrough: boolean } => {
   const historyFocus = getHistoryFocus(gameHistory);
 
   if (!historyFocus) return { passThrough: true };
@@ -27,12 +27,14 @@ export const saveClue = (
   if (!isChop) return { passThrough: true };
 
   const currentGame = gameHistory[gameHistory.length - 1];
-  const inductionStart = gameHistory[gameHistory.length - 2];
+  const targetInductionStart =
+    gameHistory[gameHistory.length - 2].asView(targetPlayedIndex);
   const targetViewOldCardFocus = oldCardFocus.asOwn();
-  const { nextPlayables } = getLayeredPlayableHypothetical(inductionStart);
+  const { nextPlayables } =
+    getLayeredPlayableHypothetical(targetInductionStart);
 
-  const nextDangerousWith5s = getDangerousUnknownOwnCards(
-    inductionStart.asView(targetPlayedIndex),
+  const nextDangerousWith5s = getDangerousCards(
+    targetInductionStart,
     // All cards in hand are removed from dangerous, except target card if target player already knew it
     targetViewOldCardFocus.color && targetViewOldCardFocus.number
       ? new ImmutableCardValue(

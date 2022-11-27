@@ -3,7 +3,7 @@ import { MoveQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView from "../../domain/ImmutableGameView";
 import { HypotheticalGame } from "./hypothetical/HypotheticalGame";
 import { firstIsBest } from "./scores/compare";
-import { generate, Score } from "./scores/generate";
+import { generate, Score } from "./scores/generates/generate";
 import { SingleModel } from "./SingleModel";
 
 export class SimulationEngine {
@@ -55,15 +55,19 @@ export class SimulationEngine {
     const actionMove =
       this.models[hypothetical.currentTurnPlayerIndex].fastPlay(hypothetical);
 
+    const legalActionMove = originalLegalMoves.some((move) =>
+      isEqual(move, actionMove)
+    )
+      ? actionMove
+      : undefined;
+
     const legalMoves = shuffle([
       ...originalLegalMoves.filter(
         (move) =>
-          !("play" in move.interaction) && !("discard" in move.interaction)
+          !legalActionMove ||
+          !("play" in move.interaction || "discard" in move.interaction)
       ),
-      ...(actionMove &&
-      originalLegalMoves.some((move) => isEqual(move, actionMove))
-        ? [actionMove]
-        : []),
+      ...(legalActionMove ? [legalActionMove] : []),
     ]);
 
     const observeGame = (
@@ -73,8 +77,13 @@ export class SimulationEngine {
       globalTurn: HypotheticalGame;
       models: readonly SingleModel[];
     } => {
+      const originatorView = globalTurn.asView(
+        (globalTurn.currentTurnPlayerIndex + this.models.length - 1) %
+          this.models.length
+      );
+
       const outModels = models.map((model, playerIndex) =>
-        model.observeTurn(globalTurn.asView(playerIndex))
+        model.observeTurn(originatorView.asView(playerIndex))
       );
 
       const outNextTurn = outModels.reduce(
@@ -98,8 +107,11 @@ export class SimulationEngine {
 
       let models = nextModels;
       let globalTurn = nextTurn;
+      let nextTwoTurn: HypotheticalGame | undefined = undefined;
+      let roundTable: HypotheticalGame | undefined = undefined;
+      const modelsSkipped = range(3).map((_) => false);
 
-      while (globalTurn.hands.flat().length > 0) {
+      while (!modelsSkipped.every((skipped) => skipped)) {
         let fixedReferenceGlobalTurn = globalTurn;
 
         const fastPlayMove = models[
@@ -116,17 +128,37 @@ export class SimulationEngine {
             true
           );
 
-          ({ models, globalTurn } = observeGame(
+          ({ models, globalTurn: fixedReferenceGlobalTurn } = observeGame(
             fixedReferenceGlobalTurn,
             models
           ));
         } else {
-          globalTurn = fixedReferenceGlobalTurn.skipTurn();
+          modelsSkipped[fixedReferenceGlobalTurn.currentTurnPlayerIndex] = true;
+          fixedReferenceGlobalTurn = fixedReferenceGlobalTurn.skipTurn();
         }
+
+        if (!nextTwoTurn) {
+          nextTwoTurn = fixedReferenceGlobalTurn;
+        }
+
+        if (
+          fixedReferenceGlobalTurn.currentTurnPlayerIndex ===
+            hypothetical.currentTurnPlayerIndex &&
+          !roundTable
+        ) {
+          roundTable = fixedReferenceGlobalTurn;
+        }
+
+        globalTurn = fixedReferenceGlobalTurn;
       }
 
       const currentResult = {
-        ...generate(nextTurn, globalTurn),
+        ...generate(
+          nextTurn,
+          nextTwoTurn ?? globalTurn,
+          roundTable ?? globalTurn,
+          globalTurn
+        ),
         moveQuery: currentMove,
       };
 

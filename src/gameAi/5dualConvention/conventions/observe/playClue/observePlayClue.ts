@@ -1,13 +1,13 @@
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
-import { ClueIntent } from "../../../SingleModel";
+import { ClueIntents } from "../../../ai";
 import { getTouchedUniquePossibles } from "../duplicates/getTouchedUniquePossibles";
 import { getHistoryFocus } from "./getHistoryFocus";
 import { getLayeredPlayableHypothetical } from "./layeredPlayableHypothetical";
 
-export const playClue = (
+export const observePlayClue = (
   gameHistory: readonly HypotheticalGame[],
-  oldClueIntent: ClueIntent
-): { intents?: ClueIntent; passThrough: boolean } => {
+  oldClueIntent: ClueIntents
+): { intents?: ClueIntents; passThrough: boolean } => {
   const historyFocus = getHistoryFocus(gameHistory);
 
   if (!historyFocus) return { passThrough: true };
@@ -15,9 +15,12 @@ export const playClue = (
   const { newCard: cardFocus, leadingClue } = historyFocus;
   const currentGame = gameHistory[gameHistory.length - 1];
 
-  const inductionStart = gameHistory[gameHistory.length - 2];
+  const targetInductionStart = gameHistory[gameHistory.length - 2].asView(
+    leadingClue.targetPlayerIndex
+  );
 
-  const { nextPlayables } = getLayeredPlayableHypothetical(inductionStart);
+  const { nextPlayables } =
+    getLayeredPlayableHypothetical(targetInductionStart);
 
   const restrictedCard = cardFocus.restrictPossibles(nextPlayables);
 

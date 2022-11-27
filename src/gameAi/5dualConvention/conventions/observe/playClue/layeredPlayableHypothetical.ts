@@ -9,9 +9,6 @@ import { hashCard } from "../../../../aiUtils";
 import HypotheticalCard from "../../../hypothetical/HypotheticalCard";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 
-// Using possibles here because we know about third parties cards
-// And the game has been asViewed to clue giver and receiver at this point.
-
 export const getLayeredPlayableHypothetical = (
   game: HypotheticalGame
 ): { nextPlayables: readonly ImmutableCardValue[]; layerCount: number } => {

@@ -4,9 +4,10 @@ import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 import { getCardUsefulness } from "./getCardUsefulness";
 
 export const discardUseless = (
-  currentGame: HypotheticalGame,
-  playerIndex: number
+  gameHistory: readonly HypotheticalGame[]
 ): ActionQuery | undefined => {
+  const currentGame = gameHistory[gameHistory.length - 1];
+  const playerIndex = currentGame.currentTurnPlayerIndex;
   const ownHand = currentGame.hands[playerIndex];
 
   const { uselessCards, uselessColors, uselessNumbers } =

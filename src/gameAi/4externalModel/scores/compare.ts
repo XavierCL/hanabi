@@ -1,16 +1,18 @@
 import { zip } from "lodash";
-import { Score } from "./generate";
+import { Score } from "./generates/generate";
 
 export const firstIsBest = (first: Score, second: Score): boolean => {
   const prepareScore = (score: Score) => [
     score.remainingLives,
     -score.misledCount,
+    -score.dangerousNextTwoTurnDiscardCount,
+    score.roundTablePlayed,
     score.maxScore,
-    score.totalPlayed,
     -score.playDiscount,
-    score.dangerousDiscardDiscount,
+    score.totalPlayed,
     score.nextPlayableCount,
     score.totalPossibleCount,
+    -score.dangerousDiscardCount,
   ];
 
   for (const [firstQuantity, secondQuantity] of zip(
