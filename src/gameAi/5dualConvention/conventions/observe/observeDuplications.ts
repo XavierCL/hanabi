@@ -1,7 +1,7 @@
 import { mapValues } from "lodash";
-import { hashCard } from "../../../aiUtils";
 import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
 import { ClueIntents } from "../../ai";
+import { hashCard } from "../../../../domain/utils";
 
 export const observeDuplications = (
   gameHistory: readonly HypotheticalGame[],

@@ -3,9 +3,9 @@ import { CardColor, CardNumber } from "../../domain/ImmutableCard";
 import ImmutableCardView from "../../domain/ImmutableCardView";
 import { MoveQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView from "../../domain/ImmutableGameView";
+import { hashCard } from "../../domain/utils";
 import {
   getPlayableCards,
-  hashCard,
   getOrderedOtherHands,
   getPossibleClues,
   getCardUsefulness,

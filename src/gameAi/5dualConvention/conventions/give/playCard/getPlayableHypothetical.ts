@@ -5,7 +5,7 @@ import {
   CardColor,
 } from "../../../../../domain/ImmutableCard";
 import ImmutableCardValue from "../../../../../domain/ImmutableCardValue";
-import { hashCard } from "../../../../aiUtils";
+import { hashCard } from "../../../../../domain/utils";
 import HypotheticalCard from "../../../hypothetical/HypotheticalCard";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 

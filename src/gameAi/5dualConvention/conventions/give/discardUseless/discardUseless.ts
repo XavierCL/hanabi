@@ -1,5 +1,6 @@
 import { ActionQuery } from "../../../../../domain/ImmutableGameState";
-import { hashCard, reverse } from "../../../../aiUtils";
+import { hashCard } from "../../../../../domain/utils";
+import { reverse } from "../../../../aiUtils";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 import { getCardUsefulness } from "./getCardUsefulness";
 

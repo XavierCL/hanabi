@@ -6,7 +6,7 @@ import {
   CARD_NUMBERS,
 } from "../../../../../domain/ImmutableCard";
 import ImmutableCardValue from "../../../../../domain/ImmutableCardValue";
-import { hashCard2, hashCard } from "../../../../aiUtils";
+import { hashCard2, hashCard } from "../../../../../domain/utils";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 
 export const getCardUsefulness = (

@@ -7,7 +7,8 @@ import {
 import ImmutableCardValue from "../../../domain/ImmutableCardValue";
 import ImmutableCardView from "../../../domain/ImmutableCardView";
 import { MoveQuery } from "../../../domain/ImmutableGameState";
-import { cardConsistentWithClue, hashCard } from "../../aiUtils";
+import { hashCard } from "../../../domain/utils";
+import { cardConsistentWithClue } from "../../aiUtils";
 
 export default class HypotheticalCard<
   Color extends CardColor | undefined,

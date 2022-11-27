@@ -9,6 +9,7 @@ import ImmutableCardValue from "../domain/ImmutableCardValue";
 import ImmutableCardView from "../domain/ImmutableCardView";
 import { MoveQuery } from "../domain/ImmutableGameState";
 import ImmutableGameView from "../domain/ImmutableGameView";
+import { hashCard } from "../domain/utils";
 import {
   fallbackMove,
   getChop,
@@ -17,7 +18,6 @@ import {
   getPossibleOwnCards,
   PossibleCards,
   getSingletonCards,
-  hashCard,
   reverse,
 } from "./aiUtils";
 

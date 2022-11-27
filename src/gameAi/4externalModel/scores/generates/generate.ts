@@ -1,6 +1,6 @@
 import { mean, sum, sumBy } from "lodash";
 import { CARD_COLORS } from "../../../../domain/ImmutableCard";
-import { hashCard } from "../../../aiUtils";
+import { hashCard } from "../../../../domain/utils";
 import { getPlayableHypothetical } from "../../conventions/fastPlay/playCard/getPlayableHypothetical";
 import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
 import { getAllDangerous } from "./getAllDangerous";

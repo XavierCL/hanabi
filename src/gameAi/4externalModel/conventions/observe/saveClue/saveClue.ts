@@ -1,6 +1,6 @@
 import { uniqBy } from "lodash";
 import ImmutableCardValue from "../../../../../domain/ImmutableCardValue";
-import { hashCard } from "../../../../aiUtils";
+import { hashCard } from "../../../../../domain/utils";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 import { ClueIntent } from "../../../SingleModel";
 import { getTouchedUniquePossibles } from "../duplicates/getTouchedUniquePossibles";

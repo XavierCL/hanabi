@@ -1,12 +1,12 @@
 import { uniqBy } from "lodash";
 import ImmutableCardValue from "../../../../../domain/ImmutableCardValue";
-import { hashCard } from "../../../../aiUtils";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 import { ClueIntents } from "../../../ai";
 import { getTouchedUniquePossibles } from "../duplicates/getTouchedUniquePossibles";
 import { getHistoryFocus } from "../playClue/getHistoryFocus";
 import { getLayeredPlayableHypothetical } from "../playClue/layeredPlayableHypothetical";
 import { getDangerousCards } from "./getDangerousCards";
+import { hashCard } from "../../../../../domain/utils";
 
 export const observeSaveClue = (
   gameHistory: readonly HypotheticalGame[],

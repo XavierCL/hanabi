@@ -1,4 +1,4 @@
-import { hashCard } from "../../../../aiUtils";
+import { hashCard } from "../../../../../domain/utils";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 import { getPlayableHypothetical } from "./getPlayableHypothetical";
 

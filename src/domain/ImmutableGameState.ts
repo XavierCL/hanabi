@@ -1,4 +1,4 @@
-import _, { isEqual } from "lodash";
+import _, { isEqual, sum, uniqBy } from "lodash";
 import ImmutableCard, {
   CardColor,
   CardNumber,
@@ -7,6 +7,7 @@ import ImmutableCard, {
 import ImmutableCardValue from "./ImmutableCardValue";
 import ImmutableGameView, { MoveView } from "./ImmutableGameView";
 import ImmutableHand from "./ImmutableHand";
+import { hashCard } from "./utils";
 
 export const MAXIMUM_LIVES = 3;
 type RemainingLives = 3 | 2 | 1 | 0;
@@ -162,7 +163,12 @@ export default class ImmutableGameState {
   }
 
   isGameOver(): boolean {
-    return this.endTurn === this.turnCount || this.remainingLives === 0;
+    return (
+      this.endTurn === this.turnCount ||
+      this.remainingLives === 0 ||
+      sum(Object.values(this.playedCards)) ===
+        uniqBy(this.fullDeckView, hashCard).length
+    );
   }
 
   getScore(): number {

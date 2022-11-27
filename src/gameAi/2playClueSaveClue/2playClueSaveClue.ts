@@ -4,6 +4,7 @@ import ImmutableCardValue from "../../domain/ImmutableCardValue";
 import ImmutableCardView from "../../domain/ImmutableCardView";
 import { MoveQuery, ClueQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView, { OthersHand } from "../../domain/ImmutableGameView";
+import { hashCard } from "../../domain/utils";
 import {
   fallbackMove,
   getCardUsefulness,
@@ -14,7 +15,6 @@ import {
   getPossibleClues,
   getPossibleOwnCards,
   getSingletonCards,
-  hashCard,
   PossibleCards,
   reverse,
 } from "../aiUtils";

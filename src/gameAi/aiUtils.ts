@@ -12,12 +12,7 @@ import ImmutableGameView, {
   OthersHand,
   OwnHand,
 } from "../domain/ImmutableGameView";
-
-export const hashCard = (card: { color: CardColor; number: CardNumber }) =>
-  JSON.stringify({ color: card.color, number: card.number });
-
-export const hashCard2 = (color: CardColor, number: CardNumber) =>
-  JSON.stringify({ color, number });
+import { hashCard2, hashCard } from "../domain/utils";
 
 export const getCardUsefulness = (
   currentGame: ImmutableGameView

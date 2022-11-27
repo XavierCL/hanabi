@@ -3,21 +3,14 @@ import ImmutableGameView from "../../domain/ImmutableGameView";
 import { AbstractAi } from "../AbstractAi";
 import { SimulationEngine } from "./SimulationEngine";
 
-// Todo
-// If I give my own clue, I must take into consideration that my own clued cards are possibly already what I'm going to clue
-// However if I observe another's clue, I must take into consideration they know what they're doing ang so allow the clued cards to be of my own's value
-// However the core principle of this ai is to observe the game through reciprocal means.
-// Me predicting the impact of my clue on the target vs me predicting what information a bystander will observer from my clue have different handling
-// Thus this AI has a few flaws
-
-// E.g. AI 0 has 1b untouched, it's AI 1's turn and AI 2 has 1g number play clued.
-// AI 1 must give the play clue to AI0, and AI2 must observe that both 1s are playable
-
-// Follow up example
-// AI 0 has 1b untouched, it's AI 2's turn and they have 1g number play clued.
-// AI2 giving the play clue to AI1 must result in AI2 being confused what the AI1 1 possible values are.
-
 // 1. Finnesses
+// 1. 2 saves
+// 1. Allow known useless with possibles === 0
+// 1. Chop move 5
+// 1. Trash clue early game
+// 1. Sub optimal fast play chop move
+// 1. bluffs
+// 1. End game management
 
 export default class GameAi implements AbstractAi {
   readonly engine: SimulationEngine | undefined;

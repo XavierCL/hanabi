@@ -3,6 +3,7 @@ import { CardColor, CardNumber } from "../../domain/ImmutableCard";
 import ImmutableCardView from "../../domain/ImmutableCardView";
 import { MoveQuery, ClueQuery } from "../../domain/ImmutableGameState";
 import ImmutableGameView, { OthersHand } from "../../domain/ImmutableGameView";
+import { hashCard } from "../../domain/utils";
 import {
   ClueIntent,
   fallbackMove,
@@ -15,7 +16,6 @@ import {
   getPossibleClues,
   getPossibleOwnCards,
   getSingletonCards,
-  hashCard,
   PossibleCards,
   reverse,
 } from "../aiUtils";

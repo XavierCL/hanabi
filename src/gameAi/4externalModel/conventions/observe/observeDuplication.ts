@@ -1,5 +1,5 @@
 import { mapValues } from "lodash";
-import { hashCard } from "../../../aiUtils";
+import { hashCard } from "../../../../domain/utils";
 import { HypotheticalGame } from "../../hypothetical/HypotheticalGame";
 import { ClueIntent } from "../../SingleModel";
 

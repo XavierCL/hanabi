@@ -1,10 +1,10 @@
 import { mapValues } from "lodash";
 import { ClueQuery } from "../../../../../domain/ImmutableGameState";
-import { hashCard } from "../../../../aiUtils";
 import { HypotheticalGame } from "../../../hypothetical/HypotheticalGame";
 import { ClueIntents } from "../../../ai";
 import { getKnownCards } from "./getKnownCards";
 import { getTouched } from "./getTouched";
+import { hashCard } from "../../../../../domain/utils";
 
 export const getTouchedUniquePossibles = (
   newGame: HypotheticalGame,
