@@ -13,8 +13,10 @@ const DiscardAndNumbers = ({
       flexDirection: "column",
       gap: "10px",
       backgroundColor: "rgb(220, 220, 220)",
-      width: "300px",
+      width: "min(300px, 25vw)",
+      minWidth: "250px",
       padding: "10px",
+      flexShrink: 0,
     }}
   >
     <DiscardedCards discarded={currentGame.discarded} />

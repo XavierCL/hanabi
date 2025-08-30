@@ -8,7 +8,7 @@ const PlayedCards = ({ currentGame }: { currentGame: ImmutableGameState }) => (
     style={{
       display: "flex",
       flexDirection: "column",
-      gap: "10px",
+      gap: "20px",
       alignItems: "center",
       position: "relative",
     }}
@@ -16,7 +16,7 @@ const PlayedCards = ({ currentGame }: { currentGame: ImmutableGameState }) => (
     <span style={{ position: "absolute", top: "-25px" }}>
       {currentGame.isGameOver() ? "Game is done!" : "Played cards"}
     </span>
-    <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
+    <div style={{ display: "flex", flexDirection: "row", gap: "5px" }}>
       {CARD_COLORS.map((color) => {
         const playedCardNumber = currentGame.playedCards[color];
         const shownNumber =
@@ -26,7 +26,7 @@ const PlayedCards = ({ currentGame }: { currentGame: ImmutableGameState }) => (
           <Card
             key={color}
             canInteract={false}
-            onInteraction={() => {}}
+            onInteraction={() => { }}
             ownCardStatus="none"
             card={
               new ImmutableCardView<CardColor, CardNumber | undefined>("", {

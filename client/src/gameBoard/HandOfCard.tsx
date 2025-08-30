@@ -33,37 +33,61 @@ const HandOfCards = ({
   <div
     style={{
       display: "flex",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: "15px",
-      position: "relative",
+      flexDirection: "column",
+      alignItems: "flex-start",
+      gap: "5px",
     }}
   >
+    {/* Direction arrow above the cards */}
     <div
       style={{
-        position: "absolute",
-        left: "-20px",
-        color: isHistoryMode ? "beige" : "black",
-        textShadow: "black 0px 0px 1px",
+        display: "flex",
+        alignItems: "center",
+        gap: "5px",
+        fontSize: "12px",
+        color: "#666",
+        marginLeft: "15px", // Align with the cards below
       }}
     >
-      {isCurrentTurn && "▶"}
+      <span>New cards</span>
+      <span style={{ fontSize: "16px" }}>→</span>
     </div>
-    <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-      {cards.map((card) => (
-        <Card
-          key={card.cardId}
-          card={card}
-          ownCardStatus={ownCardStatus}
-          onInteraction={onInteraction}
-          canInteract={canInteract}
-          showDebugInfo={
-            showDebugInfo ? showDebugInfo[card.cardId] ?? {} : undefined
-          }
-        />
-      ))}
+
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: "8px",
+        position: "relative",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: "-20px",
+          color: isHistoryMode ? "beige" : "black",
+          textShadow: "black 0px 0px 1px",
+        }}
+      >
+        {isCurrentTurn && "▶"}
+      </div>
+      <div style={{ display: "flex", flexDirection: "row", gap: "5px" }}>
+        {cards.map((card) => (
+          <Card
+            key={card.cardId}
+            card={card}
+            ownCardStatus={ownCardStatus}
+            onInteraction={onInteraction}
+            canInteract={canInteract}
+            showDebugInfo={
+              showDebugInfo ? showDebugInfo[card.cardId] ?? {} : undefined
+            }
+          />
+        ))}
+      </div>
+      <div>{playerName}</div>
     </div>
-    <div>{playerName}</div>
   </div>
 );
 

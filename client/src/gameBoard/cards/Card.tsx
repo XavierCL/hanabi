@@ -115,8 +115,8 @@ const Card = ({
   return (
     <div
       style={{
-        height: `${200 * (shrink ?? 1)}px`,
-        width: `${130 * (shrink ?? 1)}px`,
+        height: `${120 * (shrink ?? 1)}px`,
+        width: `${95 * (shrink ?? 1)}px`,
         backgroundColor: backColor,
         display: "inline-block",
         position: "relative",

@@ -37,9 +37,11 @@ const MoveList = ({
         display: "flex",
         flexDirection: "column",
         gap: "5px",
-        width: "250px",
+        width: "min(250px, 20vw)",
+        minWidth: "200px",
         height: "90vh",
         overflowY: "auto",
+        flexShrink: 0,
       }}
     >
       {moves.map((move, moveIndex) => {
@@ -60,7 +62,7 @@ const MoveList = ({
                 <Card
                   canInteract={false}
                   card={move.interaction.play.asOthers()}
-                  onInteraction={() => {}}
+                  onInteraction={() => { }}
                   ownCardStatus="none"
                   shrink={0.1}
                 />
@@ -77,7 +79,7 @@ const MoveList = ({
                 <Card
                   canInteract={false}
                   card={move.interaction.discard.asOthers()}
-                  onInteraction={() => {}}
+                  onInteraction={() => { }}
                   ownCardStatus="none"
                   shrink={0.1}
                 />
@@ -99,7 +101,7 @@ const MoveList = ({
                       number: undefined,
                     })
                   }
-                  onInteraction={() => {}}
+                  onInteraction={() => { }}
                   ownCardStatus="none"
                   shrink={0.1}
                 />

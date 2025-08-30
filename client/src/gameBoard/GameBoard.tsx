@@ -32,7 +32,7 @@ const GameBoard = ({
 
   const seenGame =
     gameHistory.history[
-      gameHistory.seenIndex === -1 ? lastHistoryIndex : gameHistory.seenIndex
+    gameHistory.seenIndex === -1 ? lastHistoryIndex : gameHistory.seenIndex
     ];
 
   const firstEffect = useRef(true);
@@ -79,8 +79,11 @@ const GameBoard = ({
       style={{
         display: "flex",
         flexDirection: "row",
-        gap: "30px",
-        minWidth: "1300px",
+        gap: "20px",
+        width: "100vw",
+        // height: "90vh",
+        maxWidth: "100%",
+        overflow: "hidden",
       }}
     >
       <MoveList
@@ -96,9 +99,9 @@ const GameBoard = ({
         simulateMove={() => {
           const { leadingMove: knownLeadingMove } =
             gameHistory.history[
-              gameHistory.seenIndex === -1
-                ? gameHistory.history.length - 1
-                : gameHistory.seenIndex
+            gameHistory.seenIndex === -1
+              ? gameHistory.history.length - 1
+              : gameHistory.seenIndex
             ];
 
           if (!knownLeadingMove) return;
@@ -111,8 +114,8 @@ const GameBoard = ({
               "play" in interaction
                 ? { play: interaction.play.asOthers().cardId }
                 : "discard" in interaction
-                ? { discard: interaction.discard.asOthers().cardId }
-                : interaction,
+                  ? { discard: interaction.discard.asOthers().cardId }
+                  : interaction,
           };
 
           simulateMove(
@@ -125,7 +128,7 @@ const GameBoard = ({
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "20px",
+          gap: "18px",
           alignItems: "flex-start",
         }}
       >
@@ -165,17 +168,18 @@ const GameBoard = ({
             />
           );
         })}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            gap: "30px",
-            marginTop: "30px",
-          }}
-        >
-          <PlayedCards currentGame={seenGame} />
-          <DiscardAndNumbers currentGame={seenGame} />
-        </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0px",
+          marginTop: "30px",
+          marginLeft: "50px",
+        }}
+      >
+        <PlayedCards currentGame={seenGame} />
+        <DiscardAndNumbers currentGame={seenGame} />
       </div>
     </div>
   );
