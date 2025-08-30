@@ -25,40 +25,40 @@ const GameNumberInfo = ({
           number: currentGame.getRemainingDeckLength(),
         })
       }
-      onInteraction={() => {}}
+      onInteraction={() => { }}
       ownCardStatus="none"
       shrink={0.3}
       textShrink={0.5}
     />
     <div
       style={{
-        width: "50px",
-        height: "50px",
+        width: "35px",
+        height: "35px",
         backgroundColor: "rgb(178, 195, 255)",
-        borderRadius: "50px",
+        borderRadius: "35px",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        fontSize: "30px",
+        fontSize: "20px",
       }}
     >
       {currentGame.remainingClues}
     </div>
     <div
       style={{
-        width: "50px",
-        height: "50px",
+        width: "35px",
+        height: "35px",
         backgroundColor: "rgb(230, 0, 0)",
-        borderRadius: "50px",
+        borderRadius: "35px",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        fontSize: "30px",
+        fontSize: "20px",
       }}
     >
       {MAXIMUM_LIVES - currentGame.remainingLives}
     </div>
-    <div style={{ fontSize: "30px" }}>
+    <div style={{ fontSize: "20px" }}>
       {currentGame.getScore()} / {currentGame.getMaxScore()}
     </div>
   </div>
