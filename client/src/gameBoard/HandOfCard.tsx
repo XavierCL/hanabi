@@ -49,7 +49,6 @@ const HandOfCards = ({
         marginLeft: "15px", // Align with the cards below
       }}
     >
-      <span>New cards</span>
       <span style={{ fontSize: "16px" }}>→</span>
     </div>
 
