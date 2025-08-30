@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import { store } from "../store/store";
 import { NewGame, newGameToOnlineGameState } from "../domain/Game";
 
@@ -6,13 +7,17 @@ const playerCookieName = "player";
 const gameCookieName = "game";
 
 export const registerGameControllers = (app: express.Express) => {
-  app.post("/games", (req, res) => {
+  app.post("/api/games", (req, res) => {
     const newGame: NewGame = req.body;
     const gameId = store.createGame(newGameToOnlineGameState(newGame));
     res.redirect(201, `/games/${gameId}`);
   });
 
   app.get("/games/:gameId", (req, res) => {
+    const sendFile = () => {
+      res.sendFile(path.resolve(__dirname + "/../../public/index.html"));
+    };
+
     const joinGame = () => {
       const playerId = store.createGamePlayer(req.params.gameId);
       if (!playerId) {
@@ -22,7 +27,7 @@ export const registerGameControllers = (app: express.Express) => {
       }
       res.cookie(gameCookieName, req.params.gameId, { httpOnly: true });
       res.cookie(playerCookieName, playerId, { httpOnly: true });
-      res.sendFile(__dirname + "/public/index.html");
+      sendFile();
     };
 
     const gameCookie: string | undefined = req.cookies[gameCookieName];
@@ -40,8 +45,8 @@ export const registerGameControllers = (app: express.Express) => {
       return;
     }
 
-    res.sendFile(__dirname + "/public/index.html");
+    sendFile();
   });
 
-  app.use(express.static("public"));
+  app.use(express.static(path.resolve(__dirname + "/../../public")));
 };
