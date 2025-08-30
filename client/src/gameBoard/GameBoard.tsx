@@ -173,7 +173,7 @@ const GameBoard = ({
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "0px",
+          gap: "10px",
           marginTop: "30px",
           marginLeft: "50px",
         }}
